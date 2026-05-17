@@ -32,10 +32,38 @@ export type PortfolioSnapshot = {
   address: string;
   timestamp: string;
   chains: string[];
+  summary: PortfolioSummary;
   tokens: PortfolioToken[];
   positions: unknown[];
   recentActivity: RecentActivity[];
   provider: "alchemy";
+};
+
+export type PortfolioSummary = {
+  totalValueUsd: string | null;
+  pricedTokenCount: number;
+  unpricedTokenCount: number;
+  tokenCount: number;
+  stablecoinValueUsd: string | null;
+  chains: ChainSummary[];
+  topHoldings: TopHolding[];
+  warnings: string[];
+};
+
+export type ChainSummary = {
+  chain: string;
+  tokenCount: number;
+  pricedTokenCount: number;
+  unpricedTokenCount: number;
+  totalValueUsd: string | null;
+};
+
+export type TopHolding = {
+  chain: string;
+  contract: string | null;
+  symbol: string | null;
+  name: string | null;
+  valueUsd: string;
 };
 
 type ProviderToken = {
@@ -97,11 +125,13 @@ export async function getPortfolioSnapshot(address: string, chainInput?: string)
 
   const tokens = tokenResponse.data.tokens.map(token => normalizeToken(token as ProviderToken));
   const recentActivity = (txResponse.transactions as ProviderTransaction[]).map(normalizeTransaction);
+  const summary = buildPortfolioSummary(tokens);
 
   return {
     address: parsedAddress.data,
     timestamp: new Date().toISOString(),
     chains: chains.map(chain => chain.slug),
+    summary,
     tokens,
     positions: [],
     recentActivity,
@@ -174,3 +204,81 @@ function multiplyDecimalStrings(left: string, right: string): string | null {
   return (leftNumber * rightNumber).toFixed(6).replace(/\.?0+$/, "");
 }
 
+function buildPortfolioSummary(tokens: PortfolioToken[]): PortfolioSummary {
+  const pricedTokens = tokens.filter(token => token.valueUsd !== null);
+  const unpricedTokenCount = tokens.length - pricedTokens.length;
+  const chainMap = new Map<string, { tokenCount: number; pricedTokenCount: number; totalValue: number }>();
+  let totalValue = 0;
+  let stablecoinValue = 0;
+
+  for (const token of tokens) {
+    const chainSummary = chainMap.get(token.chain) ?? {
+      tokenCount: 0,
+      pricedTokenCount: 0,
+      totalValue: 0
+    };
+
+    chainSummary.tokenCount += 1;
+
+    const value = parseUsdValue(token.valueUsd);
+    if (value !== null) {
+      totalValue += value;
+      chainSummary.pricedTokenCount += 1;
+      chainSummary.totalValue += value;
+
+      if (isStablecoin(token.symbol)) {
+        stablecoinValue += value;
+      }
+    }
+
+    chainMap.set(token.chain, chainSummary);
+  }
+
+  const warnings: string[] = [];
+  if (unpricedTokenCount > 0) {
+    warnings.push(`${unpricedTokenCount} token${unpricedTokenCount === 1 ? " is" : "s are"} missing USD prices`);
+  }
+
+  return {
+    totalValueUsd: pricedTokens.length > 0 ? formatUsd(totalValue) : null,
+    pricedTokenCount: pricedTokens.length,
+    unpricedTokenCount,
+    tokenCount: tokens.length,
+    stablecoinValueUsd: stablecoinValue > 0 ? formatUsd(stablecoinValue) : null,
+    chains: [...chainMap.entries()]
+      .map(([chain, summary]) => ({
+        chain,
+        tokenCount: summary.tokenCount,
+        pricedTokenCount: summary.pricedTokenCount,
+        unpricedTokenCount: summary.tokenCount - summary.pricedTokenCount,
+        totalValueUsd: summary.pricedTokenCount > 0 ? formatUsd(summary.totalValue) : null
+      }))
+      .sort((left, right) => Number(right.totalValueUsd ?? 0) - Number(left.totalValueUsd ?? 0)),
+    topHoldings: pricedTokens
+      .map(token => ({
+        chain: token.chain,
+        contract: token.contract,
+        symbol: token.symbol,
+        name: token.name,
+        valueUsd: token.valueUsd!
+      }))
+      .sort((left, right) => Number(right.valueUsd) - Number(left.valueUsd))
+      .slice(0, 10),
+    warnings
+  };
+}
+
+function parseUsdValue(value: string | null): number | null {
+  if (value === null) return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function formatUsd(value: number): string {
+  return value.toFixed(2).replace(/\.?0+$/, "");
+}
+
+function isStablecoin(symbol: string | null): boolean {
+  if (!symbol) return false;
+  return ["USDC", "USDT", "DAI", "USDS", "USDE", "PYUSD", "LUSD", "FRAX"].includes(symbol.toUpperCase());
+}

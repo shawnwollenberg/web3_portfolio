@@ -187,6 +187,9 @@
             "type": "array",
             "items": { "type": "string" }
           },
+          "summary": {
+            "$ref": "#/components/schemas/PortfolioSummary"
+          },
           "tokens": {
             "type": "array",
             "items": {
@@ -208,7 +211,56 @@
             "const": "alchemy"
           }
         },
-        "required": ["address", "timestamp", "chains", "tokens", "positions", "recentActivity", "provider"]
+        "required": ["address", "timestamp", "chains", "summary", "tokens", "positions", "recentActivity", "provider"]
+      },
+      "PortfolioSummary": {
+        "type": "object",
+        "properties": {
+          "totalValueUsd": { "type": ["string", "null"] },
+          "pricedTokenCount": { "type": "integer" },
+          "unpricedTokenCount": { "type": "integer" },
+          "tokenCount": { "type": "integer" },
+          "stablecoinValueUsd": { "type": ["string", "null"] },
+          "chains": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChainSummary"
+            }
+          },
+          "topHoldings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TopHolding"
+            }
+          },
+          "warnings": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        },
+        "required": ["totalValueUsd", "pricedTokenCount", "unpricedTokenCount", "tokenCount", "stablecoinValueUsd", "chains", "topHoldings", "warnings"]
+      },
+      "ChainSummary": {
+        "type": "object",
+        "properties": {
+          "chain": { "type": "string" },
+          "tokenCount": { "type": "integer" },
+          "pricedTokenCount": { "type": "integer" },
+          "unpricedTokenCount": { "type": "integer" },
+          "totalValueUsd": { "type": ["string", "null"] }
+        },
+        "required": ["chain", "tokenCount", "pricedTokenCount", "unpricedTokenCount", "totalValueUsd"]
+      },
+      "TopHolding": {
+        "type": "object",
+        "properties": {
+          "chain": { "type": "string" },
+          "contract": { "type": ["string", "null"] },
+          "symbol": { "type": ["string", "null"] },
+          "name": { "type": ["string", "null"] },
+          "valueUsd": { "type": "string" }
+        },
+        "required": ["chain", "contract", "symbol", "name", "valueUsd"]
       },
       "PortfolioToken": {
         "type": "object",
@@ -242,4 +294,3 @@
     }
   }
 }
-

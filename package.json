@@ -11,6 +11,7 @@
     "check": "tsc --noEmit -p tsconfig.json",
     "test": "node --import tsx --test test/*.test.ts",
     "test:x402": "node --env-file=.env --import tsx scripts/test-x402-payment.ts",
+    "mcp": "node --env-file=.env --import tsx mcp/walletlens-mcp.ts",
     "cdk": "cdk",
     "deploy:aws": "cdk deploy --profile wallyweb",
     "destroy:aws": "cdk destroy --profile wallyweb"
@@ -20,6 +21,7 @@
   "license": "ISC",
   "dependencies": {
     "@coinbase/cdp-sdk": "^1.49.2",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "@x402/core": "^2.12.0",
     "@x402/evm": "^2.12.0",
     "@x402/express": "^2.12.0",

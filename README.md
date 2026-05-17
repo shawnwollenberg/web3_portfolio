@@ -65,6 +65,31 @@ Run:
 npm run test:x402
 ```
 
+## MCP Server
+
+WalletLens includes a local stdio MCP server for agent clients.
+
+Run it directly:
+
+```bash
+npm run mcp
+```
+
+For paid portfolio calls through MCP, set one of these in the MCP server environment:
+
+```bash
+WALLETLENS_X402_PRIVATE_KEY=0x...
+# or
+X402_TEST_PRIVATE_KEY=0x...
+```
+
+Available tools:
+
+- `get_service_metadata`
+- `get_supported_chains`
+- `get_openapi_schema`
+- `get_portfolio`
+
 ## AWS Deployment
 
 This project deploys an AWS Lambda Function URL with CDK. It uses the `wallyweb` AWS profile by default in the npm script.

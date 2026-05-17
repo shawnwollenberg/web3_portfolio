@@ -1,3 +1,4 @@
+import { bazaarResourceServerExtension, declareDiscoveryExtension } from "@x402/extensions/bazaar";
 import { generateJwt } from "@coinbase/cdp-sdk/auth";
 import { HTTPFacilitatorClient } from "@x402/core/server";
 import type { RoutesConfig } from "@x402/core/server";
@@ -6,6 +7,7 @@ import { ExactEvmScheme } from "@x402/evm/exact/server";
 import { paymentMiddleware, x402ResourceServer } from "@x402/express";
 import type { RequestHandler } from "express";
 import { config } from "./config.js";
+import { portfolioExample, portfolioInputSchema, portfolioOutputSchema } from "./schemas.js";
 
 export const paymentRouteConfig = {
   "GET /portfolio": {
@@ -17,7 +19,21 @@ export const paymentRouteConfig = {
       maxTimeoutSeconds: 120
     },
     resource: `${config.publicBaseUrl}/portfolio`,
-    description: "WalletLens normalized EVM wallet portfolio snapshot"
+    description: "WalletLens normalized EVM wallet portfolio snapshot",
+    mimeType: "application/json",
+    extensions: {
+      ...declareDiscoveryExtension({
+        input: {
+          address: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+          chains: "base,ethereum"
+        },
+        inputSchema: portfolioInputSchema,
+        output: {
+          example: portfolioExample,
+          schema: portfolioOutputSchema
+        }
+      })
+    }
   }
 } satisfies RoutesConfig;
 
@@ -35,10 +51,9 @@ export function createPaymentMiddleware(): RequestHandler | null {
     createAuthHeaders: createFacilitatorAuthHeaders
   });
 
-  const resourceServer = new x402ResourceServer(facilitator).register(
-    config.x402Network as Network,
-    new ExactEvmScheme()
-  );
+  const resourceServer = new x402ResourceServer(facilitator)
+    .register(config.x402Network as Network, new ExactEvmScheme())
+    .registerExtension(bazaarResourceServerExtension);
 
   return paymentMiddleware(paymentRoutes, resourceServer, {
     appName: "WalletLens API",

@@ -9,6 +9,7 @@ Use this skill when an agent needs a normalized EVM wallet portfolio snapshot an
 - Paid endpoint: `GET /portfolio`
 - Discovery: `GET /.well-known/x402.json`
 - OpenAPI: `GET /openapi.json`
+- Local MCP server: `npm run mcp`
 - Payment protocol: x402
 - Payment network: Base mainnet, `eip155:8453`
 - Price: `$0.02` USDC per portfolio call
@@ -74,6 +75,7 @@ The paid response contains:
 - `address`
 - `timestamp`
 - `chains`
+- `summary`
 - `tokens`
 - `positions`
 - `recentActivity`
@@ -92,6 +94,17 @@ Token objects contain:
 - `balance`
 - `priceUsd`
 - `valueUsd`
+
+Summary contains:
+
+- `totalValueUsd`
+- `pricedTokenCount`
+- `unpricedTokenCount`
+- `tokenCount`
+- `stablecoinValueUsd`
+- `chains`
+- `topHoldings`
+- `warnings`
 
 ## Error Handling
 
@@ -112,4 +125,3 @@ After a successful paid request, summarize:
 - Recent activity count
 
 Avoid overstating completeness. WalletLens depends on provider coverage and currently focuses on EVM chains.
-

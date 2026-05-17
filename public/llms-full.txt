@@ -80,6 +80,16 @@ Expected paid response shape:
   "address": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
   "timestamp": "2026-05-17T00:00:00.000Z",
   "chains": ["base", "ethereum"],
+  "summary": {
+    "totalValueUsd": "1234.56",
+    "pricedTokenCount": 8,
+    "unpricedTokenCount": 2,
+    "tokenCount": 10,
+    "stablecoinValueUsd": "125.50",
+    "chains": [],
+    "topHoldings": [],
+    "warnings": ["2 tokens are missing USD prices"]
+  },
   "tokens": [
     {
       "chain": "base",
@@ -149,4 +159,3 @@ Fetch the shareable WalletLens agent skill at:
 ```text
 https://walletlens.wallyweb.com/docs/walletlens-agent-skill.md
 ```
-

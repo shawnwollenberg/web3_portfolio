@@ -12,5 +12,5 @@
     "rootDir": ".",
     "types": ["node"]
   },
-  "include": ["src/**/*.ts", "infra/**/*.ts", "test/**/*.ts"]
+  "include": ["src/**/*.ts", "infra/**/*.ts", "test/**/*.ts", "scripts/**/*.ts", "mcp/**/*.ts"]
 }
