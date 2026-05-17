@@ -1,0 +1,42 @@
+{
+  "name": "walletlens",
+  "version": "1.0.0",
+  "description": "WalletLens: paid x402 API for normalized EVM wallet portfolio snapshots.",
+  "type": "module",
+  "main": "dist/server.js",
+  "scripts": {
+    "dev": "tsx watch --env-file=.env src/server.ts",
+    "start": "node dist/server.js",
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc --noEmit -p tsconfig.json",
+    "test": "node --import tsx --test test/*.test.ts",
+    "cdk": "cdk",
+    "deploy:aws": "cdk deploy --profile wallyweb",
+    "destroy:aws": "cdk destroy --profile wallyweb"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@coinbase/cdp-sdk": "^1.49.2",
+    "@x402/core": "^2.12.0",
+    "@x402/evm": "^2.12.0",
+    "@x402/express": "^2.12.0",
+    "alchemy-sdk": "^3.6.5",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "serverless-http": "^4.0.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.8.0",
+    "aws-cdk": "^2.1122.0",
+    "aws-cdk-lib": "^2.254.0",
+    "constructs": "^10.6.0",
+    "esbuild": "^0.28.0",
+    "tsx": "^4.22.1",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.6"
+  }
+}

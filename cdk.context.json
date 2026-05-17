@@ -1,0 +1,10 @@
+{
+  "hosted-zone:account=661452835066:domainName=wallyweb.com:region=us-east-1": {
+    "Id": "/hostedzone/Z09694702F6F6C010YJ2Y",
+    "Name": "wallyweb.com."
+  },
+  "hosted-zone:account=661452835066:domainName=wallyweb.com:region=us-east-2": {
+    "Id": "/hostedzone/Z09694702F6F6C010YJ2Y",
+    "Name": "wallyweb.com."
+  }
+}
