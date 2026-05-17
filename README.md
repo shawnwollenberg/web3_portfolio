@@ -44,6 +44,27 @@ Discovery:
 curl http://localhost:3000/.well-known/x402.json
 ```
 
+## Paid x402 Test
+
+Use a dedicated test wallet. Do not use a high-value wallet or commit the private key.
+
+Add this to `.env`:
+
+```bash
+X402_TEST_PRIVATE_KEY=0x...
+X402_TEST_ADDRESS=0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045
+X402_TEST_CHAINS=base,ethereum
+X402_TEST_URL=https://walletlens.wallyweb.com/portfolio
+```
+
+The payer wallet needs Base USDC for the `$0.02` x402 payment.
+
+Run:
+
+```bash
+npm run test:x402
+```
+
 ## AWS Deployment
 
 This project deploys an AWS Lambda Function URL with CDK. It uses the `wallyweb` AWS profile by default in the npm script.

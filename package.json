@@ -10,6 +10,7 @@
     "build": "tsc -p tsconfig.json",
     "check": "tsc --noEmit -p tsconfig.json",
     "test": "node --import tsx --test test/*.test.ts",
+    "test:x402": "node --env-file=.env --import tsx scripts/test-x402-payment.ts",
     "cdk": "cdk",
     "deploy:aws": "cdk deploy --profile wallyweb",
     "destroy:aws": "cdk destroy --profile wallyweb"
@@ -26,6 +27,7 @@
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "serverless-http": "^4.0.0",
+    "viem": "^2.49.3",
     "zod": "^4.4.3"
   },
   "devDependencies": {
