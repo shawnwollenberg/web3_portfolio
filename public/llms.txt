@@ -1,0 +1,36 @@
+# WalletLens API
+
+> Paid x402 API for normalized EVM wallet portfolio snapshots.
+
+WalletLens provides a machine-readable wallet portfolio endpoint for agents and automation. It returns normalized token balances, native balances, prices where available, and recent activity across supported EVM chains. The paid endpoint uses x402 over HTTP 402 Payment Required.
+
+## Key URLs
+
+- [Health](https://walletlens.wallyweb.com/health): Service health check.
+- [x402 discovery](https://walletlens.wallyweb.com/.well-known/x402.json): Paid resource metadata.
+- [OpenAPI](https://walletlens.wallyweb.com/openapi.json): Machine-readable API schema.
+- [Full LLM docs](https://walletlens.wallyweb.com/llms-full.txt): Complete agent usage guide.
+- [WalletLens agent skill](https://walletlens.wallyweb.com/docs/walletlens-agent-skill.md): Shareable instructions for agent clients.
+
+## Paid Endpoint
+
+- `GET /portfolio`
+- Price: `$0.02` USDC per request
+- Payment network: Base mainnet, `eip155:8453`
+- Payment protocol: x402
+- Query params:
+  - `address`: required EVM wallet address
+  - `chains`: optional comma-separated chain list
+
+## Supported Chains
+
+- `base`
+- `ethereum` or `eth`
+- `optimism`
+- `arbitrum`
+- `polygon`
+
+## Notes For Agents
+
+Start with `/.well-known/x402.json` and `/openapi.json`. For unpaid requests to `/portfolio`, expect HTTP `402` with a `payment-required` response header. Use an x402-capable client to satisfy the payment requirement, then retry the same request with the payment header.
+

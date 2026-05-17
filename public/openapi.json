@@ -1,0 +1,245 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "WalletLens API",
+    "version": "1.0.0",
+    "description": "Paid x402 API for normalized EVM wallet portfolio snapshots."
+  },
+  "servers": [
+    {
+      "url": "https://walletlens.wallyweb.com"
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Health check",
+        "responses": {
+          "200": {
+            "description": "Service health",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/.well-known/x402.json": {
+      "get": {
+        "summary": "x402 discovery metadata",
+        "responses": {
+          "200": {
+            "description": "Paid resource metadata",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/X402Discovery"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/portfolio": {
+      "get": {
+        "summary": "Get a normalized wallet portfolio snapshot",
+        "description": "Requires x402 payment. Unpaid requests return HTTP 402 with a payment-required header.",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^0x[a-fA-F0-9]{40}$"
+            },
+            "description": "EVM wallet address."
+          },
+          {
+            "name": "chains",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "base,ethereum",
+              "examples": ["base", "base,ethereum", "base,ethereum,arbitrum,optimism,polygon"]
+            },
+            "description": "Comma-separated supported chain slugs."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Portfolio snapshot after successful x402 payment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortfolioSnapshot"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "402": {
+            "description": "Payment required",
+            "headers": {
+              "payment-required": {
+                "description": "Base64-encoded x402 payment requirements.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server or provider error"
+          }
+        }
+      }
+    },
+    "/llms.txt": {
+      "get": {
+        "summary": "LLM-friendly API index",
+        "responses": {
+          "200": {
+            "description": "Markdown documentation index",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/llms-full.txt": {
+      "get": {
+        "summary": "Full LLM-friendly API documentation",
+        "responses": {
+          "200": {
+            "description": "Markdown documentation",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Health": {
+        "type": "object",
+        "properties": {
+          "ok": { "type": "boolean" },
+          "service": { "type": "string" },
+          "name": { "type": "string" },
+          "x402DevBypass": { "type": "boolean" }
+        },
+        "required": ["ok", "service", "name", "x402DevBypass"]
+      },
+      "X402Discovery": {
+        "type": "object",
+        "properties": {
+          "version": { "type": "string" },
+          "resources": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "path": { "type": "string" },
+                "method": { "type": "string" },
+                "price": { "type": "string" },
+                "network": { "type": "string" },
+                "description": { "type": "string" }
+              },
+              "required": ["path", "method", "price", "network", "description"]
+            }
+          }
+        },
+        "required": ["version", "resources"]
+      },
+      "PortfolioSnapshot": {
+        "type": "object",
+        "properties": {
+          "address": { "type": "string" },
+          "timestamp": { "type": "string", "format": "date-time" },
+          "chains": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "tokens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PortfolioToken"
+            }
+          },
+          "positions": {
+            "type": "array",
+            "items": {}
+          },
+          "recentActivity": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RecentActivity"
+            }
+          },
+          "provider": {
+            "type": "string",
+            "const": "alchemy"
+          }
+        },
+        "required": ["address", "timestamp", "chains", "tokens", "positions", "recentActivity", "provider"]
+      },
+      "PortfolioToken": {
+        "type": "object",
+        "properties": {
+          "chain": { "type": "string" },
+          "chainId": { "type": "string" },
+          "contract": { "type": ["string", "null"] },
+          "symbol": { "type": ["string", "null"] },
+          "name": { "type": ["string", "null"] },
+          "decimals": { "type": ["integer", "null"] },
+          "logo": { "type": ["string", "null"] },
+          "rawBalance": { "type": "string" },
+          "balance": { "type": ["string", "null"] },
+          "priceUsd": { "type": ["string", "null"] },
+          "valueUsd": { "type": ["string", "null"] }
+        },
+        "required": ["chain", "chainId", "contract", "symbol", "name", "decimals", "logo", "rawBalance", "balance", "priceUsd", "valueUsd"]
+      },
+      "RecentActivity": {
+        "type": "object",
+        "properties": {
+          "chain": { "type": ["string", "null"] },
+          "hash": { "type": ["string", "null"] },
+          "from": { "type": ["string", "null"] },
+          "to": { "type": ["string", "null"] },
+          "blockNumber": { "type": ["integer", "string", "null"] },
+          "timestamp": { "type": ["string", "null"] }
+        },
+        "required": ["chain", "hash", "from", "to", "blockNumber", "timestamp"]
+      }
+    }
+  }
+}
+

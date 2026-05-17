@@ -1,0 +1,152 @@
+# WalletLens API
+
+WalletLens is a paid API for normalized EVM wallet portfolio snapshots. It is intended for AI agents, portfolio workflows, wallet monitoring tools, and automation systems that need a clean response shape without maintaining their own multi-chain indexing pipeline.
+
+Base URL:
+
+```text
+https://walletlens.wallyweb.com
+```
+
+## Discovery
+
+Use these public, unpaid resources:
+
+```text
+GET /health
+GET /.well-known/x402.json
+GET /openapi.json
+GET /llms.txt
+GET /llms-full.txt
+GET /docs/walletlens-agent-skill.md
+```
+
+## Payment
+
+WalletLens uses x402. The paid portfolio endpoint returns HTTP `402 Payment Required` when no valid x402 payment is supplied.
+
+Payment details:
+
+- Scheme: `exact`
+- Network: `eip155:8453`
+- Chain: Base mainnet
+- Asset: USDC
+- Price: `$0.02`
+- Expected unpaid response: HTTP `402` with a `payment-required` header
+
+Agent flow:
+
+1. Request `GET /portfolio?address=...&chains=...`.
+2. If HTTP `402`, parse the `payment-required` header.
+3. Create and submit the x402 payment payload using an x402-compatible client.
+4. Retry the same request with the payment header.
+5. Parse the JSON portfolio snapshot.
+
+## Endpoint: GET /portfolio
+
+Returns a normalized EVM wallet portfolio snapshot.
+
+Query parameters:
+
+- `address`: required EVM address, formatted as `0x` plus 40 hex characters.
+- `chains`: optional comma-separated chain list. Defaults to `base,ethereum`.
+
+Supported chains:
+
+- `base`
+- `ethereum`
+- `eth`
+- `optimism`
+- `arbitrum`
+- `polygon`
+
+Example:
+
+```bash
+curl -i "https://walletlens.wallyweb.com/portfolio?address=0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045&chains=base,ethereum"
+```
+
+Expected unpaid result:
+
+```text
+HTTP/2 402
+payment-required: <base64 encoded x402 payment requirements>
+```
+
+Expected paid response shape:
+
+```json
+{
+  "address": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+  "timestamp": "2026-05-17T00:00:00.000Z",
+  "chains": ["base", "ethereum"],
+  "tokens": [
+    {
+      "chain": "base",
+      "chainId": "eip155:8453",
+      "contract": "0x...",
+      "symbol": "USDC",
+      "name": "USD Coin",
+      "decimals": 6,
+      "logo": "https://...",
+      "rawBalance": "1000000",
+      "balance": "1",
+      "priceUsd": "1.00",
+      "valueUsd": "1"
+    }
+  ],
+  "positions": [],
+  "recentActivity": [],
+  "provider": "alchemy"
+}
+```
+
+## Error Behavior
+
+- Missing or invalid `address`: HTTP `400`
+- Unsupported `chains`: HTTP `400`
+- Missing payment on `/portfolio`: HTTP `402`
+- Provider or server failure: HTTP `500`
+
+## Test Queries
+
+Health:
+
+```bash
+curl https://walletlens.wallyweb.com/health
+```
+
+x402 discovery:
+
+```bash
+curl https://walletlens.wallyweb.com/.well-known/x402.json
+```
+
+Portfolio, unpaid 402:
+
+```bash
+curl -i "https://walletlens.wallyweb.com/portfolio?address=0x0000000000000000000000000000000000000000&chains=base"
+```
+
+Portfolio, multi-chain:
+
+```bash
+curl -i "https://walletlens.wallyweb.com/portfolio?address=0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045&chains=base,ethereum,arbitrum,optimism,polygon"
+```
+
+## OpenAPI
+
+Fetch the OpenAPI schema at:
+
+```text
+https://walletlens.wallyweb.com/openapi.json
+```
+
+## Agent Skill
+
+Fetch the shareable WalletLens agent skill at:
+
+```text
+https://walletlens.wallyweb.com/docs/walletlens-agent-skill.md
+```
+

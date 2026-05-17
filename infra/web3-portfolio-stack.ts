@@ -38,7 +38,15 @@ export class Web3PortfolioStack extends cdk.Stack {
         format: cdk.aws_lambda_nodejs.OutputFormat.CJS,
         target: "node20",
         mainFields: ["module", "main"],
-        sourceMap: true
+        sourceMap: true,
+        commandHooks: {
+          beforeBundling: () => [],
+          beforeInstall: () => [],
+          afterBundling: (_inputDir, outputDir) => [
+            `cp -R public ${outputDir}/public`,
+            `cp -R docs ${outputDir}/docs`
+          ]
+        }
       },
       environment: {
         ALCHEMY_API_KEY: alchemyApiKey,
