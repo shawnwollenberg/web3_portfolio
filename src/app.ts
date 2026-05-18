@@ -164,6 +164,11 @@ export function createApp() {
       return;
     }
 
+    if (error instanceof Error && error.name === "ProviderError") {
+      res.status(502).json({ error: "Provider error", details: error.message });
+      return;
+    }
+
     if (error instanceof Error && error.message.startsWith("Unsupported chain:")) {
       res.status(400).json({ error: error.message });
       return;

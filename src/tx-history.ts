@@ -1,5 +1,4 @@
 import {
-  Alchemy,
   AssetTransfersCategory,
   SortingOrder,
   type AssetTransfersWithMetadataResult
@@ -105,6 +104,17 @@ type ChainTransferResult = {
   pageKey?: string;
 };
 
+type AssetTransfersRpcResponse = {
+  result?: {
+    transfers?: AssetTransfersWithMetadataResult[];
+    pageKey?: string;
+  };
+  error?: {
+    code?: number;
+    message?: string;
+  };
+};
+
 export async function getTxHistorySnapshot(
   address: string,
   options: {
@@ -181,16 +191,11 @@ async function getTransfersForChain(
   category: TxHistoryCategory,
   maxCount: number
 ): Promise<ChainTransferResult> {
-  const alchemy = new Alchemy({
-    apiKey: config.alchemyApiKey,
-    network: chain.alchemyNetwork
-  });
-
-  const response = await alchemy.core.getAssetTransfers({
+  const response = await getAssetTransfers(chain, {
     ...(direction === "out" ? { fromAddress: address } : { toAddress: address }),
     category: [...categoryMap[category]],
     excludeZeroValue: true,
-    maxCount,
+    maxCount: `0x${maxCount.toString(16)}`,
     order: SortingOrder.DESCENDING,
     withMetadata: true
   });
@@ -198,9 +203,54 @@ async function getTransfersForChain(
   return {
     chain,
     direction,
-    transfers: response.transfers,
+    transfers: response.transfers ?? [],
     pageKey: response.pageKey
   };
+}
+
+async function getAssetTransfers(chain: SupportedChain, params: Record<string, unknown>) {
+  const response = await fetch(`https://${chain.alchemyNetwork}.g.alchemy.com/v2/${config.alchemyApiKey}`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json"
+    },
+    body: JSON.stringify({
+      jsonrpc: "2.0",
+      id: 1,
+      method: "alchemy_getAssetTransfers",
+      params: [params]
+    })
+  });
+
+  const responseText = await response.text();
+  const body = parseAssetTransfersResponse(responseText);
+
+  if (!response.ok || body.error) {
+    const error = new Error(
+      body.error?.message ?? (responseText || `Alchemy transfer request failed with HTTP ${response.status}`)
+    );
+    error.name = "ProviderError";
+    throw error;
+  }
+
+  return {
+    transfers: body.result?.transfers ?? [],
+    pageKey: body.result?.pageKey
+  };
+}
+
+function parseAssetTransfersResponse(text: string): AssetTransfersRpcResponse {
+  if (!text) return {};
+
+  try {
+    return JSON.parse(text) as AssetTransfersRpcResponse;
+  } catch {
+    return {
+      error: {
+        message: text
+      }
+    };
+  }
 }
 
 function dedupeTransfers(results: ChainTransferResult[]) {
