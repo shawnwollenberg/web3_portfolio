@@ -11,7 +11,7 @@ const testEndpoint = parseEndpoint(
   cliArgs.endpoint || cliArgs.resource || process.env.X402_TEST_ENDPOINT || endpointFromUrl(process.env.X402_TEST_URL)
 );
 const baseUrl = (cliArgs.baseUrl || process.env.X402_TEST_BASE_URL || "https://walletlens.wallyweb.com").replace(/\/+$/, "");
-const endpointUrl = cliArgs.url || process.env.X402_TEST_URL || `${baseUrl}/${testEndpoint}`;
+const endpointUrl = cliArgs.url || getEndpointUrl(testEndpoint, baseUrl);
 const address =
   cliArgs.address ||
   process.env.X402_TEST_ADDRESS ||
@@ -134,6 +134,15 @@ function endpointFromUrl(value: string | undefined): TestEndpoint | undefined {
     return undefined;
   }
   return undefined;
+}
+
+function getEndpointUrl(endpoint: TestEndpoint, baseUrl: string): string {
+  if (!process.env.X402_TEST_URL) return `${baseUrl}/${endpoint}`;
+
+  const envEndpoint = endpointFromUrl(process.env.X402_TEST_URL);
+  if (envEndpoint === endpoint) return process.env.X402_TEST_URL;
+
+  return `${baseUrl}/${endpoint}`;
 }
 
 function normalizePrivateKey(value: string | undefined): HexPrivateKey | undefined {
