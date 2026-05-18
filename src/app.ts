@@ -3,11 +3,20 @@ import { z } from "zod";
 import { config } from "./config.js";
 import { getPortfolioSnapshot, type PortfolioSnapshot } from "./portfolio.js";
 import { portfolioExample } from "./schemas.js";
+import { getTxHistorySnapshot } from "./tx-history.js";
 import { createPaymentMiddleware, paymentRouteConfig } from "./x402.js";
 
 const portfolioQuerySchema = z.object({
   address: z.string().regex(/^0x[a-fA-F0-9]{40}$/),
   chains: z.string().optional()
+});
+
+const txHistoryQuerySchema = z.object({
+  address: z.string().regex(/^0x[a-fA-F0-9]{40}$/),
+  chains: z.string().optional(),
+  limit: z.coerce.number().int().positive().max(100).optional(),
+  days: z.coerce.number().int().positive().max(365).optional(),
+  category: z.enum(["all", "external", "internal", "erc20", "erc721", "erc1155"]).optional()
 });
 
 type PreviewCache = {
@@ -43,9 +52,6 @@ export function createApp() {
   });
 
   app.get("/status", (_req, res) => {
-    const route = paymentRouteConfig["GET /portfolio"];
-    const accepts = Array.isArray(route.accepts) ? route.accepts[0] : route.accepts;
-
     res.json({
       ok: true,
       name: "WalletLens API",
@@ -54,16 +60,7 @@ export function createApp() {
       uptimeSeconds: Math.round(process.uptime()),
       baseUrl: config.publicBaseUrl,
       x402DevBypass: config.x402DevBypass,
-      paidResources: [
-        {
-          path: "/portfolio",
-          method: "GET",
-          price: accepts.price,
-          network: accepts.network,
-          asset: "USDC",
-          description: route.description
-        }
-      ],
+      paidResources: getPaidResources(),
       freeResources: ["/", "/preview", "/pricing", "/examples", "/llms.txt", "/llms-full.txt", "/openapi.json"],
       supportedChains: ["base", "ethereum", "optimism", "arbitrum", "polygon"],
       docs: {
@@ -118,20 +115,11 @@ export function createApp() {
   });
 
   app.get("/.well-known/x402.json", (_req, res) => {
-    const route = paymentRouteConfig["GET /portfolio"];
-    const accepts = Array.isArray(route.accepts) ? route.accepts[0] : route.accepts;
-
     res.json({
       version: "1",
-      resources: [
-        {
-          path: "/portfolio",
-          method: "GET",
-          price: accepts.price,
-          network: accepts.network,
-          description: route.description
-        }
-      ]
+      service: "WalletLens",
+      description: "Agent-native web3 data suite: portfolio snapshots and enriched transaction history.",
+      resources: getPaidResources()
     });
   });
 
@@ -144,6 +132,16 @@ export function createApp() {
     try {
       const query = portfolioQuerySchema.parse(req.query);
       const snapshot = await getPortfolioSnapshot(query.address, query.chains);
+      res.json(snapshot);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/tx-history", async (req, res, next) => {
+    try {
+      const query = txHistoryQuerySchema.parse(req.query);
+      const snapshot = await getTxHistorySnapshot(query.address, query);
       res.json(snapshot);
     } catch (error) {
       next(error);
@@ -176,6 +174,22 @@ export function createApp() {
   });
 
   return app;
+}
+
+function getPaidResources() {
+  return Object.entries(paymentRouteConfig).map(([routeKey, route]) => {
+    const [method, path] = routeKey.split(" ");
+    const accepts = Array.isArray(route.accepts) ? route.accepts[0] : route.accepts;
+
+    return {
+      path,
+      method,
+      price: accepts.price,
+      network: accepts.network,
+      asset: "USDC",
+      description: route.description
+    };
+  });
 }
 
 async function getPreviewSnapshot(): Promise<PortfolioSnapshot> {

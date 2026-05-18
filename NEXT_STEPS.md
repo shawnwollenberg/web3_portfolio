@@ -38,6 +38,6 @@ Make WalletLens easier for autonomous agents to discover, evaluate, pay for, and
 
 - [x] Add a free preview endpoint.
 - Add batch wallet lookups.
-- Add `/tx-history`.
-- Add risk flags and entity labels.
+- [x] Add `/tx-history`.
+- [x] Add basic risk flags and entity labels.
 - Add Solana support after EVM usage is validated.

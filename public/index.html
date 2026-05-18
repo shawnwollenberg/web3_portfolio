@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>WalletLens — Paid x402 API for EVM Wallet Portfolios</title>
-<meta name="description" content="WalletLens is a paid x402 API that returns normalized EVM wallet portfolio snapshots: token balances, prices, native balances, and recent activity across Base, Ethereum, Optimism, Arbitrum, and Polygon." />
-<meta property="og:title" content="WalletLens — Paid x402 API for EVM Wallet Portfolios" />
-<meta property="og:description" content="Normalized EVM wallet portfolio snapshots. Pay $0.02 USDC per request via x402 on Base." />
+<title>WalletLens — Paid x402 API for EVM Wallet Data</title>
+<meta name="description" content="WalletLens is a paid x402 API that returns normalized EVM wallet portfolio snapshots and enriched transaction history across Base, Ethereum, Optimism, Arbitrum, and Polygon." />
+<meta property="og:title" content="WalletLens — Paid x402 API for EVM Wallet Data" />
+<meta property="og:description" content="Normalized EVM portfolio snapshots and enriched transaction history. Pay $0.02 USDC per request via x402 on Base." />
 <meta property="og:type" content="website" />
 <meta property="og:url" content="https://walletlens.wallyweb.com" />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='28' fill='%2300d4a4'/%3E%3Ccircle cx='32' cy='32' r='12' fill='%23061015'/%3E%3C/svg%3E" />
@@ -358,10 +358,10 @@
 
   <header class="hero">
     <span class="badge"><span class="pulse"></span>Live on Base · x402</span>
-    <h1>Normalized EVM portfolios,<br /><span class="grad">priced per request.</span></h1>
+    <h1>Normalized EVM wallet data,<br /><span class="grad">priced per request.</span></h1>
     <p class="sub">
-      WalletLens is a paid HTTP API for agents. Pass an address, get token balances,
-      native balances, prices, and recent activity across major EVM chains — settled
+      WalletLens is a paid HTTP API for agents. Pass an address, get portfolio balances
+      or enriched transaction history across major EVM chains — settled
       in USDC over <a href="https://www.x402.org/" target="_blank" rel="noopener">x402</a> for $0.02 a call.
     </p>
     <div class="cta-row">
@@ -382,8 +382,9 @@
 <pre id="codeBlock"><span class="c"># Discover the paid resource</span>
 curl https://walletlens.wallyweb.com/.well-known/x402.json
 
-<span class="c"># Call the portfolio endpoint with an x402 client</span>
+<span class="c"># Call either paid endpoint with an x402 client</span>
 curl <span class="s">"https://walletlens.wallyweb.com/portfolio?address=0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045&amp;chains=base,ethereum"</span>
+curl <span class="s">"https://walletlens.wallyweb.com/tx-history?address=0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea&amp;chains=base&amp;limit=20"</span>
 
 <span class="c"># Returns 402 Payment Required without a payment header.</span>
 <span class="c"># Pay $0.02 USDC on Base, retry with the x402 payment header,</span>
@@ -400,6 +401,14 @@ curl <span class="s">"https://walletlens.wallyweb.com/portfolio?address=0xd8dA6B
         <div>
           <div class="path">/portfolio</div>
           <div class="desc">Normalized snapshot — tokens, prices, native balance, recent activity.</div>
+        </div>
+        <span class="price">$0.02 USDC</span>
+      </div>
+      <div class="ep">
+        <span class="method">GET</span>
+        <div>
+          <div class="path">/tx-history</div>
+          <div class="desc">TxLens enriched transfer history with direction, categories, labels, and insights.</div>
         </div>
         <span class="price">$0.02 USDC</span>
       </div>
@@ -458,7 +467,7 @@ curl <span class="s">"https://walletlens.wallyweb.com/portfolio?address=0xd8dA6B
       </div>
       <div class="feat">
         <h3>Normalized output</h3>
-        <p>Consistent token, price, and activity schema across every supported chain.</p>
+        <p>Consistent portfolio and transaction schemas across every supported chain.</p>
       </div>
       <div class="feat">
         <h3>MCP server included</h3>

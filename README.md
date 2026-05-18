@@ -1,6 +1,6 @@
 # WalletLens API
 
-Paid API for normalized EVM wallet portfolio snapshots. The MVP uses Alchemy Portfolio APIs for token balances, prices, and recent activity, then gates `GET /portfolio` with x402 unless local dev bypass is enabled.
+Paid API for normalized EVM wallet portfolio snapshots and TxLens enriched transaction history. The app uses Alchemy APIs for token balances, prices, recent activity, and transfers, then gates paid endpoints with x402 unless local dev bypass is enabled.
 
 ## Secret Setup
 
@@ -42,6 +42,12 @@ Portfolio request:
 
 ```bash
 curl "http://localhost:3000/portfolio?address=0x0000000000000000000000000000000000000000&chains=base,ethereum"
+```
+
+TxLens history request:
+
+```bash
+curl "http://localhost:3000/tx-history?address=0x0000000000000000000000000000000000000000&chains=base&limit=20"
 ```
 
 Discovery:
@@ -95,6 +101,7 @@ Available tools:
 - `get_supported_chains`
 - `get_openapi_schema`
 - `get_portfolio`
+- `get_tx_history`
 
 ## AWS Deployment
 
@@ -137,6 +144,7 @@ The deploy output includes `PortfolioApiUrl`. Use that base URL for:
 - `GET /examples`
 - `GET /.well-known/x402.json`
 - `GET /portfolio?address=...&chains=base,ethereum`
+- `GET /tx-history?address=...&chains=base&limit=20`
 
 The public production URL is:
 

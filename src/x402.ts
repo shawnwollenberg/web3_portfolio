@@ -7,7 +7,14 @@ import { ExactEvmScheme } from "@x402/evm/exact/server";
 import { paymentMiddleware, x402ResourceServer } from "@x402/express";
 import type { RequestHandler } from "express";
 import { config } from "./config.js";
-import { portfolioExample, portfolioInputSchema, portfolioOutputSchema } from "./schemas.js";
+import {
+  portfolioExample,
+  portfolioInputSchema,
+  portfolioOutputSchema,
+  txHistoryExample,
+  txHistoryInputSchema,
+  txHistoryOutputSchema
+} from "./schemas.js";
 
 export const paymentRouteConfig = {
   "GET /portfolio": {
@@ -31,6 +38,34 @@ export const paymentRouteConfig = {
         output: {
           example: portfolioExample,
           schema: portfolioOutputSchema
+        }
+      })
+    }
+  },
+  "GET /tx-history": {
+    accepts: {
+      scheme: "exact",
+      price: `$${config.x402PriceUsd}`,
+      network: config.x402Network as Network,
+      payTo: config.payTo ?? "0x0000000000000000000000000000000000000000",
+      maxTimeoutSeconds: 120
+    },
+    resource: `${config.publicBaseUrl}/tx-history`,
+    description: "TxLens enriched multi-chain transaction history with categorization and insights",
+    mimeType: "application/json",
+    extensions: {
+      ...declareDiscoveryExtension({
+        input: {
+          address: "0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea",
+          chains: "base",
+          limit: 20,
+          days: 30,
+          category: "all"
+        },
+        inputSchema: txHistoryInputSchema,
+        output: {
+          example: txHistoryExample,
+          schema: txHistoryOutputSchema
         }
       })
     }

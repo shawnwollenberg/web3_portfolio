@@ -25,7 +25,10 @@ server.registerTool(
     const metadata = {
       name: "WalletLens API",
       baseUrl,
-      paidEndpoint: `${baseUrl}/portfolio`,
+      paidEndpoints: {
+        portfolio: `${baseUrl}/portfolio`,
+        txHistory: `${baseUrl}/tx-history`
+      },
       price: "$0.02",
       paymentProtocol: "x402",
       paymentNetwork: "eip155:8453",
@@ -135,6 +138,80 @@ server.registerTool(
   }
 );
 
+server.registerTool(
+  "get_tx_history",
+  {
+    description:
+      "Fetch paid TxLens enriched transaction history via x402. Requires WALLETLENS_X402_PRIVATE_KEY or X402_TEST_PRIVATE_KEY in the MCP server environment.",
+    inputSchema: {
+      address: z.string().regex(/^0x[a-fA-F0-9]{40}$/).describe("EVM wallet address."),
+      chains: z.string().default("base,ethereum").describe("Comma-separated supported chain slugs."),
+      limit: z.number().int().positive().max(100).default(50).describe("Maximum rows to return."),
+      days: z.number().int().positive().max(365).default(30).describe("Requested lookback intent."),
+      category: z
+        .enum(["all", "external", "internal", "erc20", "erc721", "erc1155"])
+        .default("all")
+        .describe("Transfer category filter.")
+    }
+  },
+  async ({ address, chains, limit, days, category }) => {
+    const privateKey = normalizePrivateKey(process.env.WALLETLENS_X402_PRIVATE_KEY || process.env.X402_TEST_PRIVATE_KEY);
+    const url = new URL(`${baseUrl}/tx-history`);
+    url.searchParams.set("address", address);
+    url.searchParams.set("chains", chains);
+    url.searchParams.set("limit", String(limit));
+    url.searchParams.set("days", String(days));
+    url.searchParams.set("category", category);
+
+    if (!privateKey) {
+      return jsonToolResult({
+        error: "missing_private_key",
+        message:
+          "Set WALLETLENS_X402_PRIVATE_KEY or X402_TEST_PRIVATE_KEY in the MCP server environment to enable paid x402 calls.",
+        unpaidUrl: url.toString()
+      });
+    }
+
+    const account = privateKeyToAccount(privateKey);
+    const coreClient = new x402Client();
+    registerExactEvmScheme(coreClient, { signer: account });
+    const client = new x402HTTPClient(coreClient);
+
+    const initialResponse = await fetch(url);
+    if (initialResponse.status !== 402) {
+      return jsonToolResult({
+        error: "unexpected_initial_response",
+        status: initialResponse.status,
+        body: await readResponseBody(initialResponse)
+      });
+    }
+
+    const paymentRequired = client.getPaymentRequiredResponse(
+      name => initialResponse.headers.get(name),
+      await tryReadJson(initialResponse)
+    );
+    const paymentPayload = await client.createPaymentPayload(paymentRequired);
+    const paidResponse = await fetch(url, {
+      headers: client.encodePaymentSignatureHeader(paymentPayload)
+    });
+
+    const body = await readResponseBody(paidResponse);
+    if (!paidResponse.ok) {
+      return jsonToolResult({
+        error: "paid_request_failed",
+        status: paidResponse.status,
+        body
+      });
+    }
+
+    return jsonToolResult({
+      payer: account.address,
+      settlement: tryGetSettlement(client, paidResponse),
+      txHistory: JSON.parse(body)
+    });
+  }
+);
+
 const transport = new StdioServerTransport();
 await server.connect(transport);
 
@@ -190,4 +267,3 @@ function tryGetSettlement(client: x402HTTPClient, response: Response) {
     return null;
   }
 }
-

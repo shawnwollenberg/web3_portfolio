@@ -1,12 +1,12 @@
 # WalletLens Agent Skill
 
-Use this skill when an agent needs a normalized EVM wallet portfolio snapshot and can make x402 payments over HTTP.
+Use this skill when an agent needs a normalized EVM wallet portfolio snapshot or enriched transaction history and can make x402 payments over HTTP.
 
 ## Service
 
 - Name: WalletLens API
 - Base URL: `https://walletlens.wallyweb.com`
-- Paid endpoint: `GET /portfolio`
+- Paid endpoints: `GET /portfolio`, `GET /tx-history`
 - Free preview: `GET /preview`
 - Status/resource index: `GET /status`
 - Discovery: `GET /.well-known/x402.json`
@@ -14,7 +14,7 @@ Use this skill when an agent needs a normalized EVM wallet portfolio snapshot an
 - Local MCP server: `npm run mcp`
 - Payment protocol: x402
 - Payment network: Base mainnet, `eip155:8453`
-- Price: `$0.02` USDC per portfolio call
+- Price: `$0.02` USDC per paid call
 
 ## When To Use
 
@@ -23,6 +23,7 @@ Use WalletLens when the user asks for:
 - Wallet portfolio balances
 - Token holdings for an EVM address
 - Multi-chain wallet snapshots
+- Enriched transaction history
 - Recent wallet activity summaries
 - Agent-readable portfolio JSON
 
@@ -45,6 +46,7 @@ Use the preview to confirm the response shape. It is limited to the configured d
 
 ```text
 GET https://walletlens.wallyweb.com/portfolio?address=<evmAddress>&chains=<chains>
+GET https://walletlens.wallyweb.com/tx-history?address=<evmAddress>&chains=<chains>&limit=<limit>
 ```
 
 Required query params:
@@ -54,6 +56,7 @@ Required query params:
 Optional query params:
 
 - `chains`: comma-separated list. Defaults to `base,ethereum`.
+- For `tx-history`: `limit`, `days`, and `category` are also accepted.
 
 Supported chains:
 
@@ -66,7 +69,7 @@ Supported chains:
 
 ## x402 Flow
 
-1. Make the portfolio request.
+1. Make the portfolio or transaction history request.
 2. If the response is HTTP `402`, read the `payment-required` response header.
 3. Use an x402-capable client wallet to create the payment payload.
 4. Retry the exact same request with the x402 payment header.
@@ -76,6 +79,7 @@ Unpaid test:
 
 ```bash
 curl -i "https://walletlens.wallyweb.com/portfolio?address=0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045&chains=base,ethereum"
+curl -i "https://walletlens.wallyweb.com/tx-history?address=0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea&chains=base&limit=20"
 ```
 
 ## Response Shape
@@ -115,6 +119,34 @@ Summary contains:
 - `chains`
 - `topHoldings`
 - `warnings`
+
+TxLens transaction history contains:
+
+- `summary.transactionCount`
+- direction counts
+- action counts
+- per-chain counts
+- normalized `transactions`
+- `pagination.pageKeys`
+
+Transaction objects contain:
+
+- `chain`
+- `chainId`
+- `hash`
+- `timestamp`
+- `from`
+- `to`
+- `counterparty`
+- `direction`
+- `category`
+- `type`
+- `protocol`
+- `asset`
+- `value`
+- `decoded`
+- `labels`
+- `riskFlags`
 
 ## Error Handling
 

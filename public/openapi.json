@@ -179,6 +179,95 @@
         }
       }
     },
+    "/tx-history": {
+      "get": {
+        "summary": "Get enriched wallet transaction history",
+        "description": "Requires x402 payment. Returns normalized multi-chain transfer history with direction, categorization, decoded summaries, labels, and basic insights.",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^0x[a-fA-F0-9]{40}$"
+            },
+            "description": "EVM wallet address."
+          },
+          {
+            "name": "chains",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "base,ethereum"
+            },
+            "description": "Comma-separated supported chain slugs."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 50,
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 30,
+              "minimum": 1,
+              "maximum": 365
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["all", "external", "internal", "erc20", "erc721", "erc1155"],
+              "default": "all"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Enriched transaction history after successful x402 payment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TxHistorySnapshot"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "402": {
+            "description": "Payment required",
+            "headers": {
+              "payment-required": {
+                "description": "Base64-encoded x402 payment requirements.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server or provider error"
+          }
+        }
+      }
+    },
     "/llms.txt": {
       "get": {
         "summary": "LLM-friendly API index",
@@ -453,6 +542,93 @@
           "timestamp": { "type": ["string", "null"] }
         },
         "required": ["chain", "hash", "from", "to", "blockNumber", "timestamp"]
+      },
+      "TxHistorySnapshot": {
+        "type": "object",
+        "properties": {
+          "address": { "type": "string" },
+          "timestamp": { "type": "string", "format": "date-time" },
+          "chains": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "request": {
+            "type": "object"
+          },
+          "summary": {
+            "type": "object"
+          },
+          "transactions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TxHistoryTransaction"
+            }
+          },
+          "pagination": {
+            "type": "object"
+          },
+          "provider": {
+            "type": "string",
+            "const": "alchemy"
+          },
+          "note": { "type": "string" }
+        },
+        "required": ["address", "timestamp", "chains", "request", "summary", "transactions", "pagination", "provider", "note"]
+      },
+      "TxHistoryTransaction": {
+        "type": "object",
+        "properties": {
+          "chain": { "type": "string" },
+          "chainId": { "type": "string" },
+          "hash": { "type": "string" },
+          "uniqueId": { "type": "string" },
+          "timestamp": { "type": ["string", "null"] },
+          "blockNumber": { "type": "string" },
+          "from": { "type": ["string", "null"] },
+          "to": { "type": ["string", "null"] },
+          "counterparty": { "type": ["string", "null"] },
+          "direction": { "type": "string", "enum": ["in", "out", "self", "unknown"] },
+          "category": { "type": "string" },
+          "type": { "type": "string" },
+          "protocol": { "type": ["string", "null"] },
+          "asset": { "type": ["string", "null"] },
+          "value": { "type": ["string", "null"] },
+          "tokenId": { "type": ["string", "null"] },
+          "contract": { "type": ["string", "null"] },
+          "valueUsd": { "type": ["string", "null"] },
+          "decoded": { "type": "object" },
+          "labels": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "riskFlags": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        },
+        "required": [
+          "chain",
+          "chainId",
+          "hash",
+          "uniqueId",
+          "timestamp",
+          "blockNumber",
+          "from",
+          "to",
+          "counterparty",
+          "direction",
+          "category",
+          "type",
+          "protocol",
+          "asset",
+          "value",
+          "tokenId",
+          "contract",
+          "valueUsd",
+          "decoded",
+          "labels",
+          "riskFlags"
+        ]
       }
     }
   }
