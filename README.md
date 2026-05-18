@@ -64,9 +64,13 @@ Add this to `.env`:
 
 ```bash
 X402_TEST_PRIVATE_KEY=0x...
+X402_TEST_ENDPOINT=portfolio
+X402_TEST_BASE_URL=https://walletlens.wallyweb.com
 X402_TEST_ADDRESS=0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045
 X402_TEST_CHAINS=base,ethereum
-X402_TEST_URL=https://walletlens.wallyweb.com/portfolio
+X402_TEST_LIMIT=20
+X402_TEST_DAYS=30
+X402_TEST_CATEGORY=all
 ```
 
 The payer wallet needs Base USDC for the `$0.02` x402 payment.
@@ -75,6 +79,12 @@ Run:
 
 ```bash
 npm run test:x402
+```
+
+Run a TxLens paid test:
+
+```bash
+npm run test:x402 -- --endpoint tx-history --address 0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea --chains base --limit 20
 ```
 
 ## MCP Server

@@ -3,15 +3,32 @@ import { registerExactEvmScheme } from "@x402/evm/exact/client";
 import { privateKeyToAccount } from "viem/accounts";
 
 type HexPrivateKey = `0x${string}`;
+type TestEndpoint = "portfolio" | "tx-history";
 
 const privateKey = normalizePrivateKey(process.env.X402_TEST_PRIVATE_KEY);
-const address = process.env.X402_TEST_ADDRESS || "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045";
-const chains = process.env.X402_TEST_CHAINS || "base,ethereum";
-const endpoint = process.env.X402_TEST_URL || "https://walletlens.wallyweb.com/portfolio";
-const url = new URL(endpoint);
+const cliArgs = parseArgs(process.argv.slice(2));
+const testEndpoint = parseEndpoint(
+  cliArgs.endpoint || cliArgs.resource || process.env.X402_TEST_ENDPOINT || endpointFromUrl(process.env.X402_TEST_URL)
+);
+const baseUrl = (cliArgs.baseUrl || process.env.X402_TEST_BASE_URL || "https://walletlens.wallyweb.com").replace(/\/+$/, "");
+const endpointUrl = cliArgs.url || process.env.X402_TEST_URL || `${baseUrl}/${testEndpoint}`;
+const address =
+  cliArgs.address ||
+  process.env.X402_TEST_ADDRESS ||
+  (testEndpoint === "tx-history"
+    ? "0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea"
+    : "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045");
+const chains = cliArgs.chains || process.env.X402_TEST_CHAINS || (testEndpoint === "tx-history" ? "base" : "base,ethereum");
+const url = new URL(endpointUrl);
 
 url.searchParams.set("address", address);
 url.searchParams.set("chains", chains);
+
+if (testEndpoint === "tx-history") {
+  url.searchParams.set("limit", cliArgs.limit || process.env.X402_TEST_LIMIT || "20");
+  url.searchParams.set("days", cliArgs.days || process.env.X402_TEST_DAYS || "30");
+  url.searchParams.set("category", cliArgs.category || process.env.X402_TEST_CATEGORY || "all");
+}
 
 if (!privateKey) {
   fail(
@@ -30,6 +47,7 @@ registerExactEvmScheme(coreClient, { signer: account });
 const client = new x402HTTPClient(coreClient);
 
 console.log(`WalletLens x402 paid-call test`);
+console.log(`endpoint: ${testEndpoint}`);
 console.log(`payer: ${account.address}`);
 console.log(`url: ${url.toString()}`);
 
@@ -80,8 +98,43 @@ if (settlement) {
   console.log("settlement response header was not present.");
 }
 
-console.log("portfolio response:");
+console.log(`${testEndpoint} response:`);
 console.log(JSON.stringify(JSON.parse(paidBody), null, 2));
+
+function parseArgs(args: string[]): Record<string, string> {
+  const parsed: Record<string, string> = {};
+
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (!arg.startsWith("--")) continue;
+
+    const [rawKey, inlineValue] = arg.slice(2).split("=", 2);
+    const value = inlineValue ?? args[index + 1];
+    if (inlineValue === undefined) index += 1;
+
+    parsed[rawKey] = value;
+  }
+
+  return parsed;
+}
+
+function parseEndpoint(value: string | undefined): TestEndpoint {
+  if (!value || value === "portfolio") return "portfolio";
+  if (value === "tx-history" || value === "tx" || value === "txlens") return "tx-history";
+  fail(`Unsupported endpoint "${value}". Use --endpoint portfolio or --endpoint tx-history.`);
+}
+
+function endpointFromUrl(value: string | undefined): TestEndpoint | undefined {
+  if (!value) return undefined;
+  try {
+    const path = new URL(value).pathname;
+    if (path.endsWith("/tx-history")) return "tx-history";
+    if (path.endsWith("/portfolio")) return "portfolio";
+  } catch {
+    return undefined;
+  }
+  return undefined;
+}
 
 function normalizePrivateKey(value: string | undefined): HexPrivateKey | undefined {
   if (!value) return undefined;
