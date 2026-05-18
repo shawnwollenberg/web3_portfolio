@@ -123,7 +123,9 @@ export async function getPortfolioSnapshot(address: string, chainInput?: string)
     }))
   ]);
 
-  const tokens = tokenResponse.data.tokens.map(token => normalizeToken(token as ProviderToken));
+  const tokens = tokenResponse.data.tokens
+    .map(token => normalizeToken(token as ProviderToken))
+    .filter(token => token.rawBalance !== "0");
   const recentActivity = (txResponse.transactions as ProviderTransaction[]).map(normalizeTransaction);
   const summary = buildPortfolioSummary(tokens);
 
@@ -144,7 +146,7 @@ function normalizeToken(token: ProviderToken): PortfolioToken {
   const chain = network ? networkToChain(network as never) : undefined;
   const metadata = token.tokenMetadata;
   const decimals = metadata?.decimals ?? null;
-  const rawBalance = typeof token.tokenBalance === "string" ? token.tokenBalance : String(token.tokenBalance ?? "0");
+  const rawBalance = normalizeRawBalance(token.tokenBalance);
   const priceUsd = token.tokenPrices?.find(price => price.currency.toLowerCase() === "usd")?.value ?? null;
   const balance = decimals === null ? null : formatTokenAmount(rawBalance, decimals);
 
@@ -184,6 +186,14 @@ function stringOrNull(value: unknown): string | null {
 function numberOrStringOrNull(value: unknown): number | string | null {
   if (typeof value === "number" || typeof value === "string") return value;
   return null;
+}
+
+function normalizeRawBalance(value: unknown): string {
+  if (typeof value !== "string") return String(value ?? "0");
+  if (/^0x[0-9a-fA-F]+$/.test(value)) {
+    return BigInt(value).toString(10);
+  }
+  return value;
 }
 
 export function formatTokenAmount(raw: string, decimals: number): string {

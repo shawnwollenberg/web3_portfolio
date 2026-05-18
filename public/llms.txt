@@ -8,7 +8,7 @@ WalletLens provides a machine-readable wallet portfolio endpoint for agents and 
 
 - [Health](https://walletlens.wallyweb.com/health): Service health check.
 - [Status](https://walletlens.wallyweb.com/status): Machine-readable status, resources, pricing, and docs links.
-- [Preview](https://walletlens.wallyweb.com/preview): Free sample query and portfolio response shape.
+- [Preview](https://walletlens.wallyweb.com/preview): Free cached live demo wallet response and portfolio shape.
 - [Examples](https://walletlens.wallyweb.com/examples): Copy-paste calls for agents and humans.
 - [Pricing](https://walletlens.wallyweb.com/pricing): Price, network, and payment details.
 - [x402 discovery](https://walletlens.wallyweb.com/.well-known/x402.json): Paid resource metadata.

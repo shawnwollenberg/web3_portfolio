@@ -35,13 +35,13 @@ Do not use WalletLens for:
 
 ## Request
 
-Before paying, inspect the free preview:
+Before paying, inspect the free cached live preview:
 
 ```text
 GET https://walletlens.wallyweb.com/preview
 ```
 
-Use the preview to confirm the response shape. Use the paid endpoint only when live wallet data is needed.
+Use the preview to confirm the response shape. It is limited to the configured demo wallet and returns compact token/activity arrays. Use the paid endpoint when live data for an arbitrary wallet or full output is needed.
 
 ```text
 GET https://walletlens.wallyweb.com/portfolio?address=<evmAddress>&chains=<chains>

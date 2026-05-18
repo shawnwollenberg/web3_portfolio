@@ -29,7 +29,7 @@ GET /docs/walletlens-agent-skill.md
 Recommended evaluation flow:
 
 1. Read `/status` for resource, pricing, chain, and docs links.
-2. Read `/preview` for a free sample response.
+2. Read `/preview` for a free cached live demo wallet response.
 3. Read `/.well-known/x402.json` or request `/portfolio` to get the x402 payment requirement.
 4. Pay only when live portfolio data is needed.
 
@@ -144,11 +144,13 @@ Status:
 curl https://walletlens.wallyweb.com/status
 ```
 
-Free preview:
+Free cached live preview:
 
 ```bash
 curl https://walletlens.wallyweb.com/preview
 ```
+
+The preview is intentionally limited to the configured demo wallet and returns a compact token/activity list. Use paid `/portfolio` calls for arbitrary wallet addresses and full output.
 
 x402 discovery:
 

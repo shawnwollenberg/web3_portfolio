@@ -1,7 +1,7 @@
 import express from "express";
 import { z } from "zod";
 import { config } from "./config.js";
-import { getPortfolioSnapshot } from "./portfolio.js";
+import { getPortfolioSnapshot, type PortfolioSnapshot } from "./portfolio.js";
 import { portfolioExample } from "./schemas.js";
 import { createPaymentMiddleware, paymentRouteConfig } from "./x402.js";
 
@@ -9,6 +9,14 @@ const portfolioQuerySchema = z.object({
   address: z.string().regex(/^0x[a-fA-F0-9]{40}$/),
   chains: z.string().optional()
 });
+
+type PreviewCache = {
+  expiresAt: number;
+  source: "live" | "fallback";
+  snapshot: PortfolioSnapshot;
+};
+
+let previewCache: PreviewCache | null = null;
 
 export function createApp() {
   const app = express();
@@ -68,19 +76,45 @@ export function createApp() {
     });
   });
 
-  app.get("/preview", (_req, res) => {
-    res.json({
-      name: "WalletLens API preview",
-      description: "Free sample response for agents evaluating the paid WalletLens /portfolio endpoint.",
-      paidEndpoint: `${config.publicBaseUrl}/portfolio`,
-      price: paymentRouteConfig["GET /portfolio"].accepts.price,
-      network: paymentRouteConfig["GET /portfolio"].accepts.network,
-      exampleQuery: {
-        address: portfolioExample.address,
-        chains: portfolioExample.chains.join(",")
-      },
-      exampleResponse: portfolioExample
-    });
+  app.get("/preview", async (_req, res, next) => {
+    try {
+      const snapshot = await getPreviewSnapshot();
+
+      res.json({
+        name: "WalletLens API live preview",
+        description:
+          "Free cached demo response for agents evaluating the paid WalletLens /portfolio endpoint. For arbitrary wallets, use the paid endpoint.",
+        paidEndpoint: `${config.publicBaseUrl}/portfolio`,
+        price: paymentRouteConfig["GET /portfolio"].accepts.price,
+        network: paymentRouteConfig["GET /portfolio"].accepts.network,
+        previewQuery: {
+          address: config.previewWalletAddress,
+          chains: config.previewWalletChains
+        },
+        cache: {
+          source: previewCache?.source ?? "live",
+          ttlSeconds: config.previewCacheTtlSeconds,
+          expiresAt: new Date(previewCache?.expiresAt ?? Date.now()).toISOString()
+        },
+        limits: {
+          tokens: 10,
+          recentActivity: 5
+        },
+        truncated: {
+          tokens: Math.max(0, snapshot.tokens.length - 10),
+          recentActivity: Math.max(0, snapshot.recentActivity.length - 5)
+        },
+        response: {
+          ...snapshot,
+          tokens: [...snapshot.tokens]
+            .sort((left, right) => Number(right.valueUsd ?? 0) - Number(left.valueUsd ?? 0))
+            .slice(0, 10),
+          recentActivity: snapshot.recentActivity.slice(0, 5)
+        }
+      });
+    } catch (error) {
+      next(error);
+    }
   });
 
   app.get("/.well-known/x402.json", (_req, res) => {
@@ -142,4 +176,30 @@ export function createApp() {
   });
 
   return app;
+}
+
+async function getPreviewSnapshot(): Promise<PortfolioSnapshot> {
+  const now = Date.now();
+  if (previewCache && previewCache.expiresAt > now) {
+    return previewCache.snapshot;
+  }
+
+  let source: PreviewCache["source"] = "live";
+  let snapshot: PortfolioSnapshot;
+
+  try {
+    snapshot = await getPortfolioSnapshot(config.previewWalletAddress, config.previewWalletChains);
+  } catch (error) {
+    console.error("Preview snapshot failed; returning static fallback", error);
+    source = "fallback";
+    snapshot = portfolioExample as unknown as PortfolioSnapshot;
+  }
+
+  previewCache = {
+    source,
+    snapshot,
+    expiresAt: now + config.previewCacheTtlSeconds * 1000
+  };
+
+  return snapshot;
 }

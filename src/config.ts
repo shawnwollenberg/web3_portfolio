@@ -23,7 +23,10 @@ const envSchema = z.object({
   X402_FACILITATOR_URL: z.string().url().default("https://facilitator.x402.org"),
   CDP_API_KEY_ID: optionalNonEmptyString,
   CDP_API_KEY_SECRET: optionalNonEmptyString,
-  PUBLIC_BASE_URL: z.string().url().default("https://walletlens.wallyweb.com")
+  PUBLIC_BASE_URL: z.string().url().default("https://walletlens.wallyweb.com"),
+  PREVIEW_WALLET_ADDRESS: z.string().regex(/^0x[a-fA-F0-9]{40}$/).default("0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"),
+  PREVIEW_WALLET_CHAINS: z.string().default("base"),
+  PREVIEW_CACHE_TTL_SECONDS: z.coerce.number().int().positive().default(600)
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -49,5 +52,8 @@ export const config = {
   x402FacilitatorUrl: parsed.data.X402_FACILITATOR_URL,
   cdpApiKeyId: parsed.data.CDP_API_KEY_ID,
   cdpApiKeySecret: parsed.data.CDP_API_KEY_SECRET,
-  publicBaseUrl: parsed.data.PUBLIC_BASE_URL.replace(/\/+$/, "")
+  publicBaseUrl: parsed.data.PUBLIC_BASE_URL.replace(/\/+$/, ""),
+  previewWalletAddress: parsed.data.PREVIEW_WALLET_ADDRESS,
+  previewWalletChains: parsed.data.PREVIEW_WALLET_CHAINS,
+  previewCacheTtlSeconds: parsed.data.PREVIEW_CACHE_TTL_SECONDS
 };

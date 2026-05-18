@@ -47,8 +47,8 @@
     },
     "/preview": {
       "get": {
-        "summary": "Free WalletLens response preview",
-        "description": "Returns a sample query and sample portfolio response so agents can evaluate the schema before paying.",
+        "summary": "Free cached live WalletLens response preview",
+        "description": "Returns a cached live portfolio response for the configured demo wallet so agents can evaluate WalletLens before paying. Arbitrary wallet lookups require the paid /portfolio endpoint.",
         "responses": {
           "200": {
             "description": "Free preview payload",
@@ -281,7 +281,7 @@
           "paidEndpoint": { "type": "string" },
           "price": { "type": "string" },
           "network": { "type": "string" },
-          "exampleQuery": {
+          "previewQuery": {
             "type": "object",
             "properties": {
               "address": { "type": "string" },
@@ -289,11 +289,36 @@
             },
             "required": ["address", "chains"]
           },
-          "exampleResponse": {
+          "cache": {
+            "type": "object",
+            "properties": {
+              "source": { "type": "string", "enum": ["live", "fallback"] },
+              "ttlSeconds": { "type": "integer" },
+              "expiresAt": { "type": "string", "format": "date-time" }
+            },
+            "required": ["source", "ttlSeconds", "expiresAt"]
+          },
+          "limits": {
+            "type": "object",
+            "properties": {
+              "tokens": { "type": "integer" },
+              "recentActivity": { "type": "integer" }
+            },
+            "required": ["tokens", "recentActivity"]
+          },
+          "truncated": {
+            "type": "object",
+            "properties": {
+              "tokens": { "type": "integer" },
+              "recentActivity": { "type": "integer" }
+            },
+            "required": ["tokens", "recentActivity"]
+          },
+          "response": {
             "$ref": "#/components/schemas/PortfolioSnapshot"
           }
         },
-        "required": ["name", "description", "paidEndpoint", "price", "network", "exampleQuery", "exampleResponse"]
+        "required": ["name", "description", "paidEndpoint", "price", "network", "previewQuery", "cache", "limits", "truncated", "response"]
       },
       "X402Discovery": {
         "type": "object",

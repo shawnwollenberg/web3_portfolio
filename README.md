@@ -32,7 +32,7 @@ Health check:
 curl http://localhost:3000/health
 ```
 
-Free preview:
+Free cached live preview:
 
 ```bash
 curl http://localhost:3000/preview
