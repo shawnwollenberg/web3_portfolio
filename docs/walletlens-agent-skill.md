@@ -7,6 +7,8 @@ Use this skill when an agent needs a normalized EVM wallet portfolio snapshot an
 - Name: WalletLens API
 - Base URL: `https://walletlens.wallyweb.com`
 - Paid endpoint: `GET /portfolio`
+- Free preview: `GET /preview`
+- Status/resource index: `GET /status`
 - Discovery: `GET /.well-known/x402.json`
 - OpenAPI: `GET /openapi.json`
 - Local MCP server: `npm run mcp`
@@ -32,6 +34,14 @@ Do not use WalletLens for:
 - Trading execution
 
 ## Request
+
+Before paying, inspect the free preview:
+
+```text
+GET https://walletlens.wallyweb.com/preview
+```
+
+Use the preview to confirm the response shape. Use the paid endpoint only when live wallet data is needed.
 
 ```text
 GET https://walletlens.wallyweb.com/portfolio?address=<evmAddress>&chains=<chains>

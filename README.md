@@ -32,6 +32,12 @@ Health check:
 curl http://localhost:3000/health
 ```
 
+Free preview:
+
+```bash
+curl http://localhost:3000/preview
+```
+
 Portfolio request:
 
 ```bash
@@ -125,6 +131,10 @@ npm run deploy:aws
 The deploy output includes `PortfolioApiUrl`. Use that base URL for:
 
 - `GET /health`
+- `GET /status`
+- `GET /preview`
+- `GET /pricing`
+- `GET /examples`
 - `GET /.well-known/x402.json`
 - `GET /portfolio?address=...&chains=base,ethereum`
 

@@ -13,13 +13,25 @@ https://walletlens.wallyweb.com
 Use these public, unpaid resources:
 
 ```text
+GET /
 GET /health
+GET /status
+GET /preview
+GET /pricing
+GET /examples
 GET /.well-known/x402.json
 GET /openapi.json
 GET /llms.txt
 GET /llms-full.txt
 GET /docs/walletlens-agent-skill.md
 ```
+
+Recommended evaluation flow:
+
+1. Read `/status` for resource, pricing, chain, and docs links.
+2. Read `/preview` for a free sample response.
+3. Read `/.well-known/x402.json` or request `/portfolio` to get the x402 payment requirement.
+4. Pay only when live portfolio data is needed.
 
 ## Payment
 
@@ -124,6 +136,18 @@ Health:
 
 ```bash
 curl https://walletlens.wallyweb.com/health
+```
+
+Status:
+
+```bash
+curl https://walletlens.wallyweb.com/status
+```
+
+Free preview:
+
+```bash
+curl https://walletlens.wallyweb.com/preview
 ```
 
 x402 discovery:

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>WalletLens Pricing</title>
+<meta name="description" content="WalletLens pricing for paid x402 EVM wallet portfolio API calls." />
+<style>
+  :root {
+    --bg: #061015;
+    --panel: #0b1a22;
+    --border: #173544;
+    --fg: #e7f3f7;
+    --muted: #8aa4ad;
+    --accent: #00d4a4;
+    --code: #04090c;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: linear-gradient(180deg, #071319 0%, var(--bg) 48%, #081116 100%);
+    color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, system-ui, sans-serif;
+    line-height: 1.55;
+  }
+  main { max-width: 920px; margin: 0 auto; padding: 32px 24px 72px; }
+  nav { display: flex; justify-content: space-between; gap: 18px; margin-bottom: 56px; font-family: var(--mono); font-size: 13px; }
+  nav a, a { color: var(--accent); text-decoration: none; }
+  nav span { color: var(--fg); }
+  h1 { margin: 0 0 12px; font-size: 44px; line-height: 1.05; letter-spacing: 0; }
+  p { color: var(--muted); max-width: 680px; }
+  .price {
+    margin: 32px 0;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--panel);
+    padding: 24px;
+  }
+  .amount { font-size: 40px; line-height: 1; color: var(--fg); margin-bottom: 8px; }
+  .amount span { color: var(--accent); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; margin-top: 28px; }
+  .item { border: 1px solid var(--border); border-radius: 8px; background: var(--panel); padding: 18px; }
+  .item h2 { font-family: var(--mono); font-size: 13px; margin: 0 0 6px; }
+  .item p { margin: 0; font-size: 14px; }
+  code, pre { font-family: var(--mono); }
+  pre { background: var(--code); border: 1px solid var(--border); border-radius: 8px; padding: 18px; overflow-x: auto; color: #d6f5ec; }
+</style>
+</head>
+<body>
+<main>
+  <nav>
+    <span>WalletLens</span>
+    <span><a href="/">Home</a> / <a href="/examples">Examples</a> / <a href="/status">Status</a></span>
+  </nav>
+
+  <h1>Simple x402 pricing.</h1>
+  <p>WalletLens charges per successful paid portfolio request. Free discovery, docs, preview, and status endpoints are available without payment.</p>
+
+  <section class="price">
+    <div class="amount"><span>$0.02</span> USDC</div>
+    <p>Per <code>GET /portfolio</code> call, settled on Base mainnet through x402.</p>
+  </section>
+
+  <section class="grid" aria-label="Pricing details">
+    <div class="item">
+      <h2>Network</h2>
+      <p>Base mainnet, CAIP-2 <code>eip155:8453</code>.</p>
+    </div>
+    <div class="item">
+      <h2>Asset</h2>
+      <p>USDC on Base. Payment details are returned in the HTTP 402 response header.</p>
+    </div>
+    <div class="item">
+      <h2>No account</h2>
+      <p>Agents can discover, pay, and retry the same HTTP request without API keys.</p>
+    </div>
+  </section>
+
+  <h2>Discover the requirement</h2>
+  <pre>curl -i "https://walletlens.wallyweb.com/portfolio?address=0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045&amp;chains=base,ethereum"</pre>
+</main>
+</body>
+</html>

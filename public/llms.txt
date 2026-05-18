@@ -7,6 +7,10 @@ WalletLens provides a machine-readable wallet portfolio endpoint for agents and 
 ## Key URLs
 
 - [Health](https://walletlens.wallyweb.com/health): Service health check.
+- [Status](https://walletlens.wallyweb.com/status): Machine-readable status, resources, pricing, and docs links.
+- [Preview](https://walletlens.wallyweb.com/preview): Free sample query and portfolio response shape.
+- [Examples](https://walletlens.wallyweb.com/examples): Copy-paste calls for agents and humans.
+- [Pricing](https://walletlens.wallyweb.com/pricing): Price, network, and payment details.
 - [x402 discovery](https://walletlens.wallyweb.com/.well-known/x402.json): Paid resource metadata.
 - [OpenAPI](https://walletlens.wallyweb.com/openapi.json): Machine-readable API schema.
 - [Full LLM docs](https://walletlens.wallyweb.com/llms-full.txt): Complete agent usage guide.
@@ -33,4 +37,3 @@ WalletLens provides a machine-readable wallet portfolio endpoint for agents and 
 ## Notes For Agents
 
 Start with `/.well-known/x402.json` and `/openapi.json`. For unpaid requests to `/portfolio`, expect HTTP `402` with a `payment-required` response header. Use an x402-capable client to satisfy the payment requirement, then retry the same request with the payment header.
-

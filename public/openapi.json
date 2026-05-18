@@ -28,6 +28,75 @@
         }
       }
     },
+    "/status": {
+      "get": {
+        "summary": "Machine-readable service status and resource index",
+        "responses": {
+          "200": {
+            "description": "Service status, paid resources, free resources, supported chains, and docs links",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Status"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/preview": {
+      "get": {
+        "summary": "Free WalletLens response preview",
+        "description": "Returns a sample query and sample portfolio response so agents can evaluate the schema before paying.",
+        "responses": {
+          "200": {
+            "description": "Free preview payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Preview"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pricing": {
+      "get": {
+        "summary": "Human-readable pricing page",
+        "responses": {
+          "200": {
+            "description": "Pricing HTML",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/examples": {
+      "get": {
+        "summary": "Human-readable examples page",
+        "responses": {
+          "200": {
+            "description": "Examples HTML",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/.well-known/x402.json": {
       "get": {
         "summary": "x402 discovery metadata",
@@ -156,6 +225,75 @@
           "x402DevBypass": { "type": "boolean" }
         },
         "required": ["ok", "service", "name", "x402DevBypass"]
+      },
+      "Status": {
+        "type": "object",
+        "properties": {
+          "ok": { "type": "boolean" },
+          "name": { "type": "string" },
+          "version": { "type": "string" },
+          "timestamp": { "type": "string", "format": "date-time" },
+          "uptimeSeconds": { "type": "integer" },
+          "baseUrl": { "type": "string" },
+          "x402DevBypass": { "type": "boolean" },
+          "paidResources": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "path": { "type": "string" },
+                "method": { "type": "string" },
+                "price": { "type": "string" },
+                "network": { "type": "string" },
+                "asset": { "type": "string" },
+                "description": { "type": "string" }
+              },
+              "required": ["path", "method", "price", "network", "asset", "description"]
+            }
+          },
+          "freeResources": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "supportedChains": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "docs": {
+            "type": "object",
+            "properties": {
+              "openapi": { "type": "string" },
+              "llms": { "type": "string" },
+              "llmsFull": { "type": "string" },
+              "skill": { "type": "string" },
+              "x402": { "type": "string" }
+            },
+            "required": ["openapi", "llms", "llmsFull", "skill", "x402"]
+          }
+        },
+        "required": ["ok", "name", "version", "timestamp", "uptimeSeconds", "baseUrl", "x402DevBypass", "paidResources", "freeResources", "supportedChains", "docs"]
+      },
+      "Preview": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "paidEndpoint": { "type": "string" },
+          "price": { "type": "string" },
+          "network": { "type": "string" },
+          "exampleQuery": {
+            "type": "object",
+            "properties": {
+              "address": { "type": "string" },
+              "chains": { "type": "string" }
+            },
+            "required": ["address", "chains"]
+          },
+          "exampleResponse": {
+            "$ref": "#/components/schemas/PortfolioSnapshot"
+          }
+        },
+        "required": ["name", "description", "paidEndpoint", "price", "network", "exampleQuery", "exampleResponse"]
       },
       "X402Discovery": {
         "type": "object",

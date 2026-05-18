@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>WalletLens — Paid x402 API for EVM Wallet Portfolios</title>
+<meta name="description" content="WalletLens is a paid x402 API that returns normalized EVM wallet portfolio snapshots: token balances, prices, native balances, and recent activity across Base, Ethereum, Optimism, Arbitrum, and Polygon." />
+<meta property="og:title" content="WalletLens — Paid x402 API for EVM Wallet Portfolios" />
+<meta property="og:description" content="Normalized EVM wallet portfolio snapshots. Pay $0.02 USDC per request via x402 on Base." />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://walletlens.wallyweb.com" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='28' fill='%2300d4a4'/%3E%3Ccircle cx='32' cy='32' r='12' fill='%23061015'/%3E%3C/svg%3E" />
+<style>
+  :root {
+    --bg: #061015;
+    --bg-elev: #0b1a22;
+    --bg-card: #0f2530;
+    --border: #173544;
+    --border-strong: #1f4858;
+    --fg: #e7f3f7;
+    --fg-dim: #8aa4ad;
+    --fg-mute: #5d7884;
+    --accent: #00d4a4;
+    --accent-soft: #00d4a420;
+    --warn: #ffb454;
+    --pink: #ff7ab6;
+    --code-bg: #04090c;
+    --mono: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, system-ui, sans-serif;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    background-image: linear-gradient(180deg, #071319 0%, #061015 44%, #081116 100%);
+    background-attachment: fixed;
+    min-height: 100vh;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 32px 24px 80px; }
+
+  /* Top nav */
+  nav.top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 48px;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--mono);
+    font-size: 14px;
+    letter-spacing: 0.04em;
+    color: var(--fg);
+  }
+  .logo-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 12px var(--accent);
+  }
+  .nav-links {
+    display: flex;
+    gap: 22px;
+    font-family: var(--mono);
+    font-size: 13px;
+  }
+  .nav-links a { color: var(--fg-dim); }
+  .nav-links a:hover { color: var(--fg); text-decoration: none; }
+
+  /* Hero */
+  .hero { padding: 24px 0 56px; }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border: 1px solid var(--border-strong);
+    border-radius: 999px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--fg-dim);
+    background: var(--bg-elev);
+    margin-bottom: 24px;
+  }
+  .badge .pulse {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 0 0 var(--accent);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(0, 212, 164, 0.6); }
+    70% { box-shadow: 0 0 0 8px rgba(0, 212, 164, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(0, 212, 164, 0); }
+  }
+  h1 {
+    font-size: clamp(36px, 5vw, 56px);
+    line-height: 1.05;
+    margin: 0 0 18px;
+    letter-spacing: -0.02em;
+    font-weight: 700;
+  }
+  h1 .grad {
+    background: linear-gradient(90deg, #00d4a4, #7df9d8 60%, #ff7ab6);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .sub {
+    font-size: 18px;
+    color: var(--fg-dim);
+    max-width: 640px;
+    margin: 0 0 32px;
+  }
+  .cta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 18px;
+    border-radius: 8px;
+    font-family: var(--mono);
+    font-size: 13px;
+    border: 1px solid var(--border-strong);
+    background: var(--bg-elev);
+    color: var(--fg);
+    cursor: pointer;
+    transition: transform 0.06s ease, border-color 0.15s ease, background 0.15s ease;
+  }
+  .btn:hover { border-color: var(--accent); text-decoration: none; }
+  .btn:active { transform: translateY(1px); }
+  .btn.primary {
+    background: var(--accent);
+    color: #03110d;
+    border-color: var(--accent);
+  }
+  .btn.primary:hover { background: #1de0b3; }
+
+  /* Code card */
+  .code-card {
+    margin-top: 36px;
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 30px 60px -30px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(0, 212, 164, 0.05) inset;
+  }
+  .code-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-elev);
+  }
+  .tab {
+    padding: 10px 16px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--fg-mute);
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    border-right: 1px solid var(--border);
+  }
+  .tab.active { color: var(--fg); background: var(--bg-card); }
+  .code-body {
+    position: relative;
+    background: var(--code-bg);
+  }
+  pre {
+    margin: 0;
+    padding: 20px 24px;
+    overflow-x: auto;
+    font-family: var(--mono);
+    font-size: 13.5px;
+    line-height: 1.65;
+    color: #d6f5ec;
+  }
+  pre .c { color: #5d7884; }
+  pre .k { color: var(--pink); }
+  pre .s { color: #b9f4d4; }
+  pre .n { color: var(--warn); }
+  .copy {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    padding: 6px 10px;
+    font-family: var(--mono);
+    font-size: 11px;
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    color: var(--fg-dim);
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .copy:hover { color: var(--fg); border-color: var(--accent); }
+
+  /* Sections */
+  section { padding: 56px 0 8px; }
+  h2 {
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--fg-mute);
+    margin: 0 0 24px;
+    font-family: var(--mono);
+    font-weight: 600;
+  }
+
+  /* Endpoint list */
+  .endpoints {
+    display: grid;
+    gap: 12px;
+  }
+  .ep {
+    display: grid;
+    grid-template-columns: 80px 1fr auto;
+    gap: 16px;
+    align-items: center;
+    padding: 16px 18px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg-elev);
+  }
+  .ep:hover { border-color: var(--border-strong); }
+  .ep .method {
+    font-family: var(--mono);
+    font-size: 11px;
+    text-align: center;
+    padding: 4px 0;
+    border-radius: 4px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    letter-spacing: 0.06em;
+  }
+  .ep .path {
+    font-family: var(--mono);
+    font-size: 14px;
+    color: var(--fg);
+  }
+  .ep .desc {
+    color: var(--fg-dim);
+    font-size: 13px;
+    margin-top: 2px;
+  }
+  .ep .price {
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: #1a2a18;
+    color: #b9f4d4;
+    border: 1px solid #2a4524;
+  }
+  .ep .price.free {
+    background: var(--bg-card);
+    color: var(--fg-dim);
+    border-color: var(--border);
+  }
+
+  /* Chains */
+  .chains {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .chip {
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 7px 12px;
+    border: 1px solid var(--border-strong);
+    border-radius: 999px;
+    background: var(--bg-elev);
+    color: var(--fg);
+  }
+
+  /* Features */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 14px;
+  }
+  .feat {
+    padding: 20px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg-elev);
+  }
+  .feat h3 {
+    font-size: 14px;
+    margin: 0 0 6px;
+    color: var(--fg);
+    font-family: var(--mono);
+    letter-spacing: 0.02em;
+  }
+  .feat p {
+    margin: 0;
+    color: var(--fg-dim);
+    font-size: 13.5px;
+  }
+
+  /* Footer */
+  footer {
+    margin-top: 64px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--fg-mute);
+  }
+  footer a { color: var(--fg-dim); }
+
+  @media (max-width: 600px) {
+    .ep { grid-template-columns: 70px 1fr; }
+    .ep .price { grid-column: 2; justify-self: start; }
+    nav.top { padding-bottom: 28px; }
+    .nav-links { gap: 14px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <nav class="top">
+    <div class="logo">
+      <span class="logo-dot"></span>
+      WalletLens
+    </div>
+    <div class="nav-links">
+      <a href="/openapi.json">OpenAPI</a>
+      <a href="/llms.txt">llms.txt</a>
+      <a href="/examples">Examples</a>
+      <a href="/pricing">Pricing</a>
+      <a href="/.well-known/x402.json">x402</a>
+      <a href="/status">Status</a>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <span class="badge"><span class="pulse"></span>Live on Base · x402</span>
+    <h1>Normalized EVM portfolios,<br /><span class="grad">priced per request.</span></h1>
+    <p class="sub">
+      WalletLens is a paid HTTP API for agents. Pass an address, get token balances,
+      native balances, prices, and recent activity across major EVM chains — settled
+      in USDC over <a href="https://www.x402.org/" target="_blank" rel="noopener">x402</a> for $0.02 a call.
+    </p>
+    <div class="cta-row">
+      <a class="btn primary" href="/openapi.json">Read the OpenAPI →</a>
+      <a class="btn" href="/preview">Preview JSON</a>
+      <a class="btn" href="/examples">Examples</a>
+      <a class="btn" href="/.well-known/x402.json">x402 discovery</a>
+      <a class="btn" href="/docs/walletlens-agent-skill.md">Agent skill</a>
+    </div>
+
+    <div class="code-card" role="region" aria-label="Example request">
+      <div class="code-tabs">
+        <button class="tab active">curl</button>
+        <button class="tab" style="color: var(--fg-mute); cursor: default;">GET /portfolio</button>
+      </div>
+      <div class="code-body">
+        <button class="copy" id="copyBtn">Copy</button>
+<pre id="codeBlock"><span class="c"># Discover the paid resource</span>
+curl https://walletlens.wallyweb.com/.well-known/x402.json
+
+<span class="c"># Call the portfolio endpoint with an x402 client</span>
+curl <span class="s">"https://walletlens.wallyweb.com/portfolio?address=0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045&amp;chains=base,ethereum"</span>
+
+<span class="c"># Returns 402 Payment Required without a payment header.</span>
+<span class="c"># Pay $0.02 USDC on Base, retry with the x402 payment header,</span>
+<span class="c"># and receive a normalized JSON snapshot.</span></pre>
+      </div>
+    </div>
+  </header>
+
+  <section>
+    <h2>Endpoints</h2>
+    <div class="endpoints">
+      <div class="ep">
+        <span class="method">GET</span>
+        <div>
+          <div class="path">/portfolio</div>
+          <div class="desc">Normalized snapshot — tokens, prices, native balance, recent activity.</div>
+        </div>
+        <span class="price">$0.02 USDC</span>
+      </div>
+      <div class="ep">
+        <span class="method">GET</span>
+        <div>
+          <div class="path">/preview</div>
+          <div class="desc">Free sample response and query shape for agents evaluating WalletLens.</div>
+        </div>
+        <span class="price free">free</span>
+      </div>
+      <div class="ep">
+        <span class="method">GET</span>
+        <div>
+          <div class="path">/.well-known/x402.json</div>
+          <div class="desc">x402 discovery document for paid resources.</div>
+        </div>
+        <span class="price free">free</span>
+      </div>
+      <div class="ep">
+        <span class="method">GET</span>
+        <div>
+          <div class="path">/openapi.json</div>
+          <div class="desc">Machine-readable API schema.</div>
+        </div>
+        <span class="price free">free</span>
+      </div>
+      <div class="ep">
+        <span class="method">GET</span>
+        <div>
+          <div class="path">/health</div>
+          <div class="desc">Liveness and configuration check.</div>
+        </div>
+        <span class="price free">free</span>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Supported chains</h2>
+    <div class="chains">
+      <span class="chip">base</span>
+      <span class="chip">ethereum</span>
+      <span class="chip">optimism</span>
+      <span class="chip">arbitrum</span>
+      <span class="chip">polygon</span>
+    </div>
+  </section>
+
+  <section>
+    <h2>Built for agents</h2>
+    <div class="grid">
+      <div class="feat">
+        <h3>x402 native</h3>
+        <p>HTTP 402 Payment Required with USDC settlement on Base. No accounts, no API keys.</p>
+      </div>
+      <div class="feat">
+        <h3>Normalized output</h3>
+        <p>Consistent token, price, and activity schema across every supported chain.</p>
+      </div>
+      <div class="feat">
+        <h3>MCP server included</h3>
+        <p>Local stdio MCP server exposes <code style="font-family: var(--mono);">get_portfolio</code> to any agent client.</p>
+      </div>
+      <div class="feat">
+        <h3>Powered by Alchemy</h3>
+        <p>Portfolio data sourced from Alchemy's multi-chain APIs and returned in one snapshot.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <span>WalletLens · paid wallet portfolio API</span>
+    <span>
+      <a href="/llms-full.txt">llms-full.txt</a> ·
+      <a href="/examples">examples</a> ·
+      <a href="/pricing">pricing</a> ·
+      <a href="/openapi.json">openapi</a> ·
+      <a href="/.well-known/x402.json">x402</a>
+    </span>
+  </footer>
+
+</div>
+
+<script>
+  const btn = document.getElementById("copyBtn");
+  const code = document.getElementById("codeBlock");
+  btn.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(code.innerText);
+      btn.textContent = "Copied";
+      setTimeout(() => (btn.textContent = "Copy"), 1500);
+    } catch {
+      btn.textContent = "Copy failed";
+      setTimeout(() => (btn.textContent = "Copy"), 1500);
+    }
+  });
+</script>
+</body>
+</html>

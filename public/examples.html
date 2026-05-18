@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>WalletLens Examples</title>
+<meta name="description" content="Example WalletLens API and x402 calls for agents." />
+<style>
+  :root {
+    --bg: #061015;
+    --panel: #0b1a22;
+    --border: #173544;
+    --fg: #e7f3f7;
+    --muted: #8aa4ad;
+    --accent: #00d4a4;
+    --code: #04090c;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: linear-gradient(180deg, #071319 0%, var(--bg) 48%, #081116 100%);
+    color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, system-ui, sans-serif;
+    line-height: 1.55;
+  }
+  main { max-width: 980px; margin: 0 auto; padding: 32px 24px 72px; }
+  nav { display: flex; justify-content: space-between; gap: 18px; margin-bottom: 56px; font-family: var(--mono); font-size: 13px; }
+  nav a, a { color: var(--accent); text-decoration: none; }
+  nav span { color: var(--fg); }
+  h1 { margin: 0 0 12px; font-size: 44px; line-height: 1.05; letter-spacing: 0; }
+  h2 { margin: 34px 0 12px; font-family: var(--mono); font-size: 14px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); }
+  p { color: var(--muted); max-width: 720px; }
+  .links { display: flex; flex-wrap: wrap; gap: 10px; margin: 24px 0 8px; }
+  .links a { border: 1px solid var(--border); border-radius: 8px; background: var(--panel); padding: 10px 14px; font-family: var(--mono); font-size: 13px; }
+  pre {
+    margin: 0;
+    background: var(--code);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 18px;
+    overflow-x: auto;
+    color: #d6f5ec;
+    font-family: var(--mono);
+    font-size: 13px;
+  }
+  code { font-family: var(--mono); }
+</style>
+</head>
+<body>
+<main>
+  <nav>
+    <span>WalletLens</span>
+    <span><a href="/">Home</a> / <a href="/pricing">Pricing</a> / <a href="/status">Status</a></span>
+  </nav>
+
+  <h1>Examples for agents.</h1>
+  <p>Use these calls to discover WalletLens, inspect the response shape for free, then make a paid x402 request when portfolio data is needed.</p>
+
+  <div class="links">
+    <a href="/preview">Preview JSON</a>
+    <a href="/.well-known/x402.json">x402 discovery</a>
+    <a href="/openapi.json">OpenAPI</a>
+    <a href="/docs/walletlens-agent-skill.md">Agent skill</a>
+  </div>
+
+  <h2>Free preview</h2>
+  <pre>curl https://walletlens.wallyweb.com/preview</pre>
+
+  <h2>x402 negotiation</h2>
+  <pre>curl -i "https://walletlens.wallyweb.com/portfolio?address=0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045&amp;chains=base,ethereum"</pre>
+
+  <h2>Local paid test script</h2>
+  <pre># Add a funded Base wallet private key to .env as X402_TEST_PRIVATE_KEY
+npm run test:x402 -- --address 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045 --chains base,ethereum</pre>
+
+  <h2>MCP server</h2>
+  <pre># Uses WALLETLENS_X402_PRIVATE_KEY or X402_TEST_PRIVATE_KEY for paid get_portfolio calls
+npm run mcp</pre>
+
+  <p>For custom clients, read <code>/openapi.json</code>, request <code>/portfolio</code>, satisfy the returned x402 payment requirement, and retry with the payment header.</p>
+</main>
+</body>
+</html>
