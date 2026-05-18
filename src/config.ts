@@ -24,7 +24,7 @@ const envSchema = z.object({
   CDP_API_KEY_ID: optionalNonEmptyString,
   CDP_API_KEY_SECRET: optionalNonEmptyString,
   PUBLIC_BASE_URL: z.string().url().default("https://walletlens.wallyweb.com"),
-  PREVIEW_WALLET_ADDRESS: z.string().regex(/^0x[a-fA-F0-9]{40}$/).default("0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"),
+  PREVIEW_WALLET_ADDRESS: z.string().regex(/^0x[a-fA-F0-9]{40}$/).default("0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea"),
   PREVIEW_WALLET_CHAINS: z.string().default("base"),
   PREVIEW_CACHE_TTL_SECONDS: z.coerce.number().int().positive().default(600)
 });

@@ -58,7 +58,7 @@ export class Web3PortfolioStack extends cdk.Stack {
           process.env.X402_FACILITATOR_URL || "https://api.cdp.coinbase.com/platform/v2/x402",
         PUBLIC_BASE_URL: process.env.PUBLIC_BASE_URL || `https://${customDomain}`,
         PREVIEW_WALLET_ADDRESS:
-          process.env.PREVIEW_WALLET_ADDRESS || "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+          process.env.PREVIEW_WALLET_ADDRESS || "0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea",
         PREVIEW_WALLET_CHAINS: process.env.PREVIEW_WALLET_CHAINS || "base",
         PREVIEW_CACHE_TTL_SECONDS: process.env.PREVIEW_CACHE_TTL_SECONDS || "600",
         ...(cdpApiKeyId ? { CDP_API_KEY_ID: cdpApiKeyId } : {}),
