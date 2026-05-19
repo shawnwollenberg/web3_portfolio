@@ -307,8 +307,14 @@ export const walletReportOutputSchema = {
         warnings: { type: "array", items: { type: "string" } }
       }
     },
-    portfolio: portfolioOutputSchema,
-    txHistory: txHistoryOutputSchema,
+    portfolio: {
+      type: "object",
+      description: "Full WalletLens portfolio snapshot. See GET /portfolio for the detailed schema."
+    },
+    txHistory: {
+      type: "object",
+      description: "Full TxLens transaction history snapshot. See GET /tx-history for the detailed schema."
+    },
     provider: { type: "string", const: "alchemy" },
     note: { type: "string" }
   },
@@ -345,11 +351,33 @@ export const walletReportExample = {
     warnings: ["USD values are currently null for transaction history."]
   },
   portfolio: {
-    ...portfolioExample,
     address: "0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea",
-    chains: ["base"]
+    chains: ["base"],
+    summary: {
+      totalValueUsd: "7.37",
+      tokenCount: 2,
+      stablecoinValueUsd: "7.37"
+    }
   },
-  txHistory: txHistoryExample,
+  txHistory: {
+    address: "0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea",
+    chains: ["base"],
+    summary: {
+      transactionCount: 20,
+      directions: { in: 20, out: 0, self: 0, unknown: 0 },
+      actions: { token_transfer: 20 }
+    },
+    transactions: [
+      {
+        chain: "base",
+        hash: "0x...",
+        direction: "in",
+        type: "token_transfer",
+        asset: "USDC",
+        value: "0.005"
+      }
+    ]
+  },
   provider: "alchemy",
   note: "WalletLens report combines normalized portfolio balances with TxLens enriched transaction history for agent wallet analysis."
 } as const;
