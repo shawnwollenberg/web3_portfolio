@@ -3,7 +3,7 @@
   "info": {
     "title": "WalletLens API",
     "version": "1.0.0",
-    "description": "Paid x402 API for normalized EVM wallet portfolio snapshots."
+    "description": "Paid x402 API for EVM wallet reports, normalized portfolio snapshots, and enriched transaction history."
   },
   "servers": [
     {
@@ -244,6 +244,95 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/TxHistorySnapshot"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "402": {
+            "description": "Payment required",
+            "headers": {
+              "payment-required": {
+                "description": "Base64-encoded x402 payment requirements.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server or provider error"
+          }
+        }
+      }
+    },
+    "/wallet-report": {
+      "get": {
+        "summary": "Get a bundled wallet report",
+        "description": "Requires x402 payment. Returns normalized EVM portfolio balances plus TxLens transaction history, top holdings, counterparties, decoded transfers, and wallet activity summary in one agent-friendly response.",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^0x[a-fA-F0-9]{40}$"
+            },
+            "description": "EVM wallet address."
+          },
+          {
+            "name": "chains",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "base,ethereum"
+            },
+            "description": "Comma-separated supported chain slugs."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 50,
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 30,
+              "minimum": 1,
+              "maximum": 365
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["all", "external", "internal", "erc20", "erc721", "erc1155"],
+              "default": "all"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bundled wallet report after successful x402 payment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WalletReportSnapshot"
                 }
               }
             }
@@ -629,6 +718,53 @@
           "labels",
           "riskFlags"
         ]
+      },
+      "WalletReportSnapshot": {
+        "type": "object",
+        "properties": {
+          "address": { "type": "string" },
+          "timestamp": { "type": "string", "format": "date-time" },
+          "chains": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "request": {
+            "type": "object"
+          },
+          "summary": {
+            "type": "object",
+            "properties": {
+              "totalValueUsd": { "type": ["string", "null"] },
+              "tokenCount": { "type": "integer" },
+              "stablecoinValueUsd": { "type": ["string", "null"] },
+              "topHoldings": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/TopHolding"
+                }
+              },
+              "transactionCount": { "type": "integer" },
+              "transactionDirections": { "type": "object" },
+              "transactionActions": { "type": "object" },
+              "warnings": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            }
+          },
+          "portfolio": {
+            "$ref": "#/components/schemas/PortfolioSnapshot"
+          },
+          "txHistory": {
+            "$ref": "#/components/schemas/TxHistorySnapshot"
+          },
+          "provider": {
+            "type": "string",
+            "const": "alchemy"
+          },
+          "note": { "type": "string" }
+        },
+        "required": ["address", "timestamp", "chains", "request", "summary", "portfolio", "txHistory", "provider", "note"]
       }
     }
   }

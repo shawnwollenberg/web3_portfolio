@@ -7,9 +7,13 @@ Make WalletLens easier for autonomous agents to discover, evaluate, pay for, and
 ## Priority 1: Agent Discovery
 
 - [x] Add x402 Bazaar metadata to the paid `/portfolio` route.
+- [x] Add x402 Bazaar metadata to the paid `/tx-history` route.
+- [x] Add search-intent rich descriptions for portfolio, transaction history, and wallet report use cases.
 - [x] Keep `llms.txt`, `llms-full.txt`, `openapi.json`, and the agent skill current.
-- Trigger at least one successful x402 settlement so CDP Bazaar can catalog the route.
+- Trigger successful x402 settlements from 3-5 distinct payer wallets for `/portfolio`, `/tx-history`, and `/wallet-report`.
 - [x] Add public examples that show unpaid 402 negotiation and paid x402 client calls.
+- Add a public agent use-cases page or JSON endpoint with common search phrases.
+- Publish WalletLens in x402, CDP, Base, Farcaster, X, and agent-builder channels.
 
 ## Priority 2: MCP Access
 
@@ -30,6 +34,7 @@ Make WalletLens easier for autonomous agents to discover, evaluate, pay for, and
 ## Priority 4: Trust And Launch
 
 - Publish a concrete launch post with URLs and example calls.
+- Publish a short "how agents should use WalletLens" post with the x402 discovery URL.
 - [x] Add `/pricing`, `/examples`, and `/status` pages or endpoints.
 - Add uptime and version metadata.
 - Move deployment secrets from Lambda environment variables into AWS Secrets Manager.
@@ -37,6 +42,8 @@ Make WalletLens easier for autonomous agents to discover, evaluate, pay for, and
 ## Priority 5: Product Expansion
 
 - [x] Add a free preview endpoint.
+- [x] Add a bundled paid `/wallet-report` endpoint for portfolio plus transaction history.
+- Add a cheaper paid `/wallet-summary` discovery endpoint if paid traffic remains low.
 - Add batch wallet lookups.
 - [x] Add `/tx-history`.
 - [x] Add basic risk flags and entity labels.

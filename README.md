@@ -1,6 +1,6 @@
 # WalletLens API
 
-Paid API for normalized EVM wallet portfolio snapshots and TxLens enriched transaction history. The app uses Alchemy APIs for token balances, prices, recent activity, and transfers, then gates paid endpoints with x402 unless local dev bypass is enabled.
+Paid API for EVM wallet intelligence: normalized portfolio snapshots, bundled wallet reports, and TxLens enriched transaction history. The app uses Alchemy APIs for token balances, prices, recent activity, and transfers, then gates paid endpoints with x402 unless local dev bypass is enabled.
 
 ## Secret Setup
 
@@ -50,6 +50,12 @@ TxLens history request:
 curl "http://localhost:3000/tx-history?address=0x0000000000000000000000000000000000000000&chains=base&limit=20"
 ```
 
+Bundled wallet report request:
+
+```bash
+curl "http://localhost:3000/wallet-report?address=0x0000000000000000000000000000000000000000&chains=base&limit=20"
+```
+
 Discovery:
 
 ```bash
@@ -85,6 +91,12 @@ Run a TxLens paid test:
 
 ```bash
 npm run test:x402 -- --endpoint tx-history --address 0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea --chains base --limit 20
+```
+
+Run a bundled wallet report paid test:
+
+```bash
+npm run test:x402 -- --endpoint wallet-report --address 0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea --chains base --limit 20
 ```
 
 ## MCP Server
@@ -155,6 +167,7 @@ The deploy output includes `PortfolioApiUrl`. Use that base URL for:
 - `GET /.well-known/x402.json`
 - `GET /portfolio?address=...&chains=base,ethereum`
 - `GET /tx-history?address=...&chains=base&limit=20`
+- `GET /wallet-report?address=...&chains=base&limit=20`
 
 The public production URL is:
 

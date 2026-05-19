@@ -4,6 +4,7 @@ import { config } from "./config.js";
 import { getPortfolioSnapshot, type PortfolioSnapshot } from "./portfolio.js";
 import { portfolioExample } from "./schemas.js";
 import { getTxHistorySnapshot } from "./tx-history.js";
+import { getWalletReportSnapshot } from "./wallet-report.js";
 import { createPaymentMiddleware, paymentRouteConfig } from "./x402.js";
 
 const portfolioQuerySchema = z.object({
@@ -61,7 +62,16 @@ export function createApp() {
       baseUrl: config.publicBaseUrl,
       x402DevBypass: config.x402DevBypass,
       paidResources: getPaidResources(),
-      freeResources: ["/", "/preview", "/pricing", "/examples", "/llms.txt", "/llms-full.txt", "/openapi.json"],
+      freeResources: [
+        "/",
+        "/preview",
+        "/pricing",
+        "/examples",
+        "/llms.txt",
+        "/llms-full.txt",
+        "/openapi.json",
+        "/.well-known/x402.json"
+      ],
       supportedChains: ["base", "ethereum", "optimism", "arbitrum", "polygon"],
       docs: {
         openapi: `${config.publicBaseUrl}/openapi.json`,
@@ -118,7 +128,8 @@ export function createApp() {
     res.json({
       version: "1",
       service: "WalletLens",
-      description: "Agent-native web3 data suite: portfolio snapshots and enriched transaction history.",
+      description:
+        "Agent-native EVM wallet intelligence suite for portfolio snapshots, token balances, Base wallet lookup, USDC transfers, and enriched transaction history.",
       resources: getPaidResources()
     });
   });
@@ -142,6 +153,16 @@ export function createApp() {
     try {
       const query = txHistoryQuerySchema.parse(req.query);
       const snapshot = await getTxHistorySnapshot(query.address, query);
+      res.json(snapshot);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/wallet-report", async (req, res, next) => {
+    try {
+      const query = txHistoryQuerySchema.parse(req.query);
+      const snapshot = await getWalletReportSnapshot(query.address, query);
       res.json(snapshot);
     } catch (error) {
       next(error);

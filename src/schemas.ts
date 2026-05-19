@@ -249,3 +249,107 @@ export const txHistoryExample = {
   provider: "alchemy",
   note: "Enriched and normalized by WalletLens TxLens."
 } as const;
+
+export const walletReportInputSchema = {
+  properties: {
+    address: {
+      type: "string",
+      pattern: "^0x[a-fA-F0-9]{40}$",
+      description: "EVM wallet address."
+    },
+    chains: {
+      type: "string",
+      default: "base,ethereum",
+      description: "Comma-separated supported chain slugs used for both portfolio and transaction history."
+    },
+    limit: {
+      type: "integer",
+      default: 25,
+      minimum: 1,
+      maximum: 100,
+      description: "Maximum enriched transaction rows to include in the bundled report."
+    },
+    days: {
+      type: "integer",
+      default: 30,
+      minimum: 1,
+      maximum: 365,
+      description: "Requested transaction lookback intent."
+    },
+    category: {
+      type: "string",
+      enum: ["all", "external", "internal", "erc20", "erc721", "erc1155"],
+      default: "all",
+      description: "Transaction category filter for the TxLens section."
+    }
+  },
+  required: ["address"],
+  additionalProperties: false
+} as const;
+
+export const walletReportOutputSchema = {
+  type: "object",
+  properties: {
+    address: { type: "string" },
+    timestamp: { type: "string", format: "date-time" },
+    chains: { type: "array", items: { type: "string" } },
+    request: { type: "object" },
+    summary: {
+      type: "object",
+      properties: {
+        totalValueUsd: { type: ["string", "null"] },
+        tokenCount: { type: "integer" },
+        stablecoinValueUsd: { type: ["string", "null"] },
+        topHoldings: { type: "array", items: { type: "object" } },
+        transactionCount: { type: "integer" },
+        transactionDirections: { type: "object" },
+        transactionActions: { type: "object" },
+        warnings: { type: "array", items: { type: "string" } }
+      }
+    },
+    portfolio: portfolioOutputSchema,
+    txHistory: txHistoryOutputSchema,
+    provider: { type: "string", const: "alchemy" },
+    note: { type: "string" }
+  },
+  required: ["address", "timestamp", "chains", "request", "summary", "portfolio", "txHistory", "provider", "note"]
+} as const;
+
+export const walletReportExample = {
+  address: "0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea",
+  timestamp: "2026-05-19T00:00:00.000Z",
+  chains: ["base"],
+  request: {
+    portfolioChains: "base",
+    txHistoryChains: "base",
+    limit: 20,
+    days: 30,
+    category: "all"
+  },
+  summary: {
+    totalValueUsd: "7.37",
+    tokenCount: 2,
+    stablecoinValueUsd: "7.37",
+    topHoldings: [
+      {
+        chain: "base",
+        contract: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+        symbol: "USDC",
+        name: "USD Coin",
+        valueUsd: "7.37"
+      }
+    ],
+    transactionCount: 20,
+    transactionDirections: { in: 20, out: 0, self: 0, unknown: 0 },
+    transactionActions: { token_transfer: 20 },
+    warnings: ["USD values are currently null for transaction history."]
+  },
+  portfolio: {
+    ...portfolioExample,
+    address: "0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea",
+    chains: ["base"]
+  },
+  txHistory: txHistoryExample,
+  provider: "alchemy",
+  note: "WalletLens report combines normalized portfolio balances with TxLens enriched transaction history for agent wallet analysis."
+} as const;

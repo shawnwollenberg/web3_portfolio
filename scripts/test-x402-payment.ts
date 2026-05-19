@@ -3,7 +3,7 @@ import { registerExactEvmScheme } from "@x402/evm/exact/client";
 import { privateKeyToAccount } from "viem/accounts";
 
 type HexPrivateKey = `0x${string}`;
-type TestEndpoint = "portfolio" | "tx-history";
+type TestEndpoint = "portfolio" | "tx-history" | "wallet-report";
 
 const privateKey = normalizePrivateKey(process.env.X402_TEST_PRIVATE_KEY);
 const cliArgs = parseArgs(process.argv.slice(2));
@@ -15,16 +15,19 @@ const endpointUrl = cliArgs.url || getEndpointUrl(testEndpoint, baseUrl);
 const address =
   cliArgs.address ||
   process.env.X402_TEST_ADDRESS ||
-  (testEndpoint === "tx-history"
+  (testEndpoint === "tx-history" || testEndpoint === "wallet-report"
     ? "0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea"
     : "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045");
-const chains = cliArgs.chains || process.env.X402_TEST_CHAINS || (testEndpoint === "tx-history" ? "base" : "base,ethereum");
+const chains =
+  cliArgs.chains ||
+  process.env.X402_TEST_CHAINS ||
+  (testEndpoint === "tx-history" || testEndpoint === "wallet-report" ? "base" : "base,ethereum");
 const url = new URL(endpointUrl);
 
 url.searchParams.set("address", address);
 url.searchParams.set("chains", chains);
 
-if (testEndpoint === "tx-history") {
+if (testEndpoint === "tx-history" || testEndpoint === "wallet-report") {
   url.searchParams.set("limit", cliArgs.limit || process.env.X402_TEST_LIMIT || "20");
   url.searchParams.set("days", cliArgs.days || process.env.X402_TEST_DAYS || "30");
   url.searchParams.set("category", cliArgs.category || process.env.X402_TEST_CATEGORY || "all");
@@ -121,7 +124,8 @@ function parseArgs(args: string[]): Record<string, string> {
 function parseEndpoint(value: string | undefined): TestEndpoint {
   if (!value || value === "portfolio") return "portfolio";
   if (value === "tx-history" || value === "tx" || value === "txlens") return "tx-history";
-  fail(`Unsupported endpoint "${value}". Use --endpoint portfolio or --endpoint tx-history.`);
+  if (value === "wallet-report" || value === "report") return "wallet-report";
+  fail(`Unsupported endpoint "${value}". Use --endpoint portfolio, --endpoint tx-history, or --endpoint wallet-report.`);
 }
 
 function endpointFromUrl(value: string | undefined): TestEndpoint | undefined {
@@ -129,6 +133,7 @@ function endpointFromUrl(value: string | undefined): TestEndpoint | undefined {
   try {
     const path = new URL(value).pathname;
     if (path.endsWith("/tx-history")) return "tx-history";
+    if (path.endsWith("/wallet-report")) return "wallet-report";
     if (path.endsWith("/portfolio")) return "portfolio";
   } catch {
     return undefined;

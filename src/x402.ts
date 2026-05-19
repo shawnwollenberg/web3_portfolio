@@ -13,7 +13,10 @@ import {
   portfolioOutputSchema,
   txHistoryExample,
   txHistoryInputSchema,
-  txHistoryOutputSchema
+  txHistoryOutputSchema,
+  walletReportExample,
+  walletReportInputSchema,
+  walletReportOutputSchema
 } from "./schemas.js";
 
 export const paymentRouteConfig = {
@@ -26,7 +29,8 @@ export const paymentRouteConfig = {
       maxTimeoutSeconds: 120
     },
     resource: `${config.publicBaseUrl}/portfolio`,
-    description: "WalletLens normalized EVM wallet portfolio snapshot",
+    description:
+      "WalletLens EVM wallet portfolio API for token balances, native ETH, USD values, stablecoin totals, top holdings, Base wallet lookup, Ethereum wallet summary, and agent wallet intelligence.",
     mimeType: "application/json",
     extensions: {
       ...declareDiscoveryExtension({
@@ -51,7 +55,8 @@ export const paymentRouteConfig = {
       maxTimeoutSeconds: 120
     },
     resource: `${config.publicBaseUrl}/tx-history`,
-    description: "TxLens enriched multi-chain transaction history with categorization and insights",
+    description:
+      "TxLens EVM transaction history API for Base and Ethereum wallets, USDC transfers, decoded token transfers, counterparties, direction, categorization, labels, risk flags, and wallet activity summaries.",
     mimeType: "application/json",
     extensions: {
       ...declareDiscoveryExtension({
@@ -66,6 +71,35 @@ export const paymentRouteConfig = {
         output: {
           example: txHistoryExample,
           schema: txHistoryOutputSchema
+        }
+      })
+    }
+  },
+  "GET /wallet-report": {
+    accepts: {
+      scheme: "exact",
+      price: `$${config.x402PriceUsd}`,
+      network: config.x402Network as Network,
+      payTo: config.payTo ?? "0x0000000000000000000000000000000000000000",
+      maxTimeoutSeconds: 120
+    },
+    resource: `${config.publicBaseUrl}/wallet-report`,
+    description:
+      "WalletLens wallet report API for agents: one paid x402 call returns EVM portfolio balances plus TxLens transaction history, Base USDC activity, top holdings, counterparties, decoded transfers, and wallet analysis summary.",
+    mimeType: "application/json",
+    extensions: {
+      ...declareDiscoveryExtension({
+        input: {
+          address: "0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea",
+          chains: "base",
+          limit: 20,
+          days: 30,
+          category: "all"
+        },
+        inputSchema: walletReportInputSchema,
+        output: {
+          example: walletReportExample,
+          schema: walletReportOutputSchema
         }
       })
     }

@@ -1,7 +1,7 @@
 {
   "name": "walletlens",
   "version": "1.0.0",
-  "description": "WalletLens: paid x402 API for normalized EVM wallet portfolio snapshots.",
+  "description": "WalletLens: paid x402 API for EVM wallet reports, portfolio snapshots, and transaction history.",
   "type": "module",
   "main": "dist/server.js",
   "scripts": {

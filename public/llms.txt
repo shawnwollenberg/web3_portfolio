@@ -1,8 +1,8 @@
 # WalletLens API
 
-> Paid x402 API for normalized EVM wallet portfolio snapshots and enriched transaction history.
+> Paid x402 API for EVM wallet portfolio snapshots, wallet reports, and enriched transaction history.
 
-WalletLens provides machine-readable wallet data endpoints for agents and automation. It returns normalized token balances, native balances, prices where available, and TxLens enriched transaction history across supported EVM chains. Paid endpoints use x402 over HTTP 402 Payment Required.
+WalletLens provides machine-readable wallet intelligence for agents and automation. It returns normalized token balances, native balances, USD prices where available, top holdings, stablecoin totals, Base wallet lookup data, USDC transfer history, decoded transfer rows, counterparties, and TxLens enriched transaction history across supported EVM chains. Paid endpoints use x402 over HTTP 402 Payment Required.
 
 ## Key URLs
 
@@ -20,6 +20,7 @@ WalletLens provides machine-readable wallet data endpoints for agents and automa
 
 - `GET /portfolio`
 - `GET /tx-history`
+- `GET /wallet-report`
 - Price: `$0.02` USDC per request
 - Payment network: Base mainnet, `eip155:8453`
 - Payment protocol: x402
@@ -38,3 +39,5 @@ WalletLens provides machine-readable wallet data endpoints for agents and automa
 ## Notes For Agents
 
 Start with `/.well-known/x402.json` and `/openapi.json`. For unpaid requests to `/portfolio` or `/tx-history`, expect HTTP `402` with a `payment-required` response header. Use an x402-capable client to satisfy the payment requirement, then retry the same request with the payment header.
+
+Use `/wallet-report` when the agent needs one answer for "analyze this wallet", "summarize this Base wallet", "get EVM wallet portfolio and transaction history", "find recent USDC transfers", or "explain this onchain wallet activity".
