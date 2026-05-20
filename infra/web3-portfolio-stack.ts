@@ -61,6 +61,7 @@ export class Web3PortfolioStack extends cdk.Stack {
           process.env.PREVIEW_WALLET_ADDRESS || "0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea",
         PREVIEW_WALLET_CHAINS: process.env.PREVIEW_WALLET_CHAINS || "base",
         PREVIEW_CACHE_TTL_SECONDS: process.env.PREVIEW_CACHE_TTL_SECONDS || "600",
+        ANALYTICS_IP_SALT: process.env.ANALYTICS_IP_SALT || "walletlens-v1",
         ...(cdpApiKeyId ? { CDP_API_KEY_ID: cdpApiKeyId } : {}),
         ...(cdpApiKeySecret ? { CDP_API_KEY_SECRET: cdpApiKeySecret } : {})
       }

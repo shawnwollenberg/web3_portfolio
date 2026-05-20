@@ -26,7 +26,8 @@ const envSchema = z.object({
   PUBLIC_BASE_URL: z.string().url().default("https://walletlens.wallyweb.com"),
   PREVIEW_WALLET_ADDRESS: z.string().regex(/^0x[a-fA-F0-9]{40}$/).default("0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea"),
   PREVIEW_WALLET_CHAINS: z.string().default("base"),
-  PREVIEW_CACHE_TTL_SECONDS: z.coerce.number().int().positive().default(600)
+  PREVIEW_CACHE_TTL_SECONDS: z.coerce.number().int().positive().default(600),
+  ANALYTICS_IP_SALT: z.string().min(1).default("walletlens-v1")
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -55,5 +56,6 @@ export const config = {
   publicBaseUrl: parsed.data.PUBLIC_BASE_URL.replace(/\/+$/, ""),
   previewWalletAddress: parsed.data.PREVIEW_WALLET_ADDRESS,
   previewWalletChains: parsed.data.PREVIEW_WALLET_CHAINS,
-  previewCacheTtlSeconds: parsed.data.PREVIEW_CACHE_TTL_SECONDS
+  previewCacheTtlSeconds: parsed.data.PREVIEW_CACHE_TTL_SECONDS,
+  analyticsIpSalt: parsed.data.ANALYTICS_IP_SALT
 };

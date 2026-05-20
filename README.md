@@ -99,6 +99,22 @@ Run a bundled wallet report paid test:
 npm run test:x402 -- --endpoint wallet-report --address 0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea --chains base --limit 20
 ```
 
+## Analytics
+
+WalletLens emits one privacy-conscious JSON analytics event per request to CloudWatch Logs. It records endpoint, status, latency, requested wallet, query parameters, hashed IP, user agent, response counts, and x402 settlement fields when available. It does not log private keys, x402 signatures, raw payment payloads, or full response bodies.
+
+Summarize recent production usage:
+
+```bash
+npm run analytics:recent -- --hours 24
+```
+
+Optional flags:
+
+```bash
+npm run analytics:recent -- --hours 168 --profile wallyweb --region us-east-2
+```
+
 ## MCP Server
 
 WalletLens includes a local stdio MCP server for agent clients.
@@ -143,6 +159,7 @@ CDP_API_KEY_SECRET=your_cdp_key_secret
 ROOT_DOMAIN=wallyweb.com
 CUSTOM_DOMAIN=walletlens.wallyweb.com
 PUBLIC_BASE_URL=https://walletlens.wallyweb.com
+ANALYTICS_IP_SALT=random-long-string
 ```
 
 Bootstrap CDK once per account/region if needed:

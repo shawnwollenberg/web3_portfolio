@@ -11,6 +11,7 @@
     "check": "tsc --noEmit -p tsconfig.json",
     "test": "node --import tsx --test test/*.test.ts",
     "test:x402": "node --env-file=.env --import tsx scripts/test-x402-payment.ts",
+    "analytics:recent": "node --env-file=.env --import tsx scripts/analytics-recent.ts",
     "mcp": "node --env-file=.env --import tsx mcp/walletlens-mcp.ts",
     "cdk": "cdk",
     "deploy:aws": "cdk deploy --profile wallyweb",

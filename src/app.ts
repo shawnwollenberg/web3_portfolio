@@ -1,5 +1,6 @@
 import express from "express";
 import { z } from "zod";
+import { analyticsMiddleware } from "./analytics.js";
 import { config } from "./config.js";
 import { getPortfolioSnapshot, type PortfolioSnapshot } from "./portfolio.js";
 import { portfolioExample } from "./schemas.js";
@@ -32,6 +33,7 @@ export function createApp() {
   const app = express();
 
   app.use(express.json());
+  app.use(analyticsMiddleware);
   app.use(express.static("public"));
   app.use("/docs", express.static("docs"));
 
