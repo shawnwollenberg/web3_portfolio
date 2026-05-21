@@ -16,6 +16,8 @@ type AnalyticsEvent = {
     tokenCount?: number;
     transactionCount?: number;
     totalValueBucket?: string | null;
+    error?: string;
+    errorReason?: string;
   };
 };
 
@@ -113,6 +115,12 @@ function printSummary(events: AnalyticsEvent[], logGroup: string, hours: number)
   printCounts("Payers", countBy(paidEvents, event => event.payer ?? "(unknown)"), 12);
   printCounts("Chains", countBy(events, event => event.chains ?? "(none)"), 12);
   printCounts("Value buckets", countBy(events, event => event.response?.totalValueBucket ?? "(none)"), 12);
+  printCounts("User agents", countBy(events, event => normalizeUserAgent(event.userAgent)), 12);
+  printCounts("404 paths", countBy(events.filter(event => event.statusCode === 404), event => event.path), 12);
+  printCounts("400 errors", countBy(events.filter(event => event.statusCode === 400), errorKey), 12);
+  printCounts("500 errors", countBy(events.filter(event => event.statusCode >= 500), errorKey), 12);
+  printCounts("402 address presence", countBy(events.filter(event => event.statusCode === 402), addressPresence), 4);
+  printCounts("Paid path address presence", countBy(events.filter(event => isPaidPath(event.path)), addressPresence), 4);
 
   const latencies = events.map(event => event.latencyMs).filter((value): value is number => typeof value === "number");
   if (latencies.length > 0) {
@@ -121,6 +129,24 @@ function printSummary(events: AnalyticsEvent[], logGroup: string, hours: number)
     console.log(`latency p50: ${percentile(latencies, 0.5)}ms`);
     console.log(`latency p95: ${percentile(latencies, 0.95)}ms`);
   }
+}
+
+function isPaidPath(path: string): boolean {
+  return path === "/portfolio" || path === "/tx-history" || path === "/wallet-report";
+}
+
+function addressPresence(event: AnalyticsEvent): string {
+  return event.addressRequested ? "with_address" : "without_address";
+}
+
+function errorKey(event: AnalyticsEvent): string {
+  const reason = event.response?.errorReason ? `: ${event.response.errorReason}` : "";
+  return `${event.path} ${event.response?.error ?? `HTTP ${event.statusCode}`}${reason}`;
+}
+
+function normalizeUserAgent(value: string | undefined): string {
+  if (!value) return "(none)";
+  return value.length > 80 ? `${value.slice(0, 79)}...` : value;
 }
 
 function printCounts(title: string, counts: Map<string, number>, limit = 10) {

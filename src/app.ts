@@ -21,6 +21,12 @@ const txHistoryQuerySchema = z.object({
   category: z.enum(["all", "external", "internal", "erc20", "erc721", "erc1155"]).optional()
 });
 
+const paidQuerySchemas = {
+  "/portfolio": portfolioQuerySchema,
+  "/tx-history": txHistoryQuerySchema,
+  "/wallet-report": txHistoryQuerySchema
+} as const;
+
 type PreviewCache = {
   expiresAt: number;
   source: "live" | "fallback";
@@ -72,6 +78,7 @@ export function createApp() {
         "/llms.txt",
         "/llms-full.txt",
         "/openapi.json",
+        "/quote",
         "/.well-known/x402.json"
       ],
       supportedChains: ["base", "ethereum", "optimism", "arbitrum", "polygon"],
@@ -135,6 +142,48 @@ export function createApp() {
       resources: getPaidResources()
     });
   });
+
+  app.get("/quote", (req, res) => {
+    const parsed = txHistoryQuerySchema.safeParse(req.query);
+    const address = typeof req.query.address === "string" ? req.query.address : undefined;
+    const chains = typeof req.query.chains === "string" ? req.query.chains : "base";
+
+    if (address && !parsed.success) {
+      res.status(400).json(buildInvalidRequestBody("/wallet-report", parsed.error));
+      return;
+    }
+
+    res.json({
+      ok: true,
+      service: "WalletLens",
+      description:
+        "Free quote for agent wallet analysis. Use /wallet-report for one paid call that returns portfolio plus transaction history.",
+      addressRequired: true,
+      addressValid: parsed.success,
+      address: parsed.success ? parsed.data.address : null,
+      chains,
+      recommendedEndpoint: "/wallet-report",
+      price: paymentRouteConfig["GET /wallet-report"].accepts.price,
+      network: paymentRouteConfig["GET /wallet-report"].accepts.network,
+      asset: "USDC",
+      paymentProtocol: "x402",
+      paidEndpoints: getPaidResources(),
+      requiredParams: {
+        address: "EVM address, 0x plus 40 hex characters"
+      },
+      optionalParams: {
+        chains: "Comma-separated chain slugs. Supported: base, ethereum, optimism, arbitrum, polygon.",
+        limit: "Transaction row limit for /tx-history and /wallet-report, 1-100.",
+        days: "Requested transaction lookback intent, 1-365.",
+        category: "all, external, internal, erc20, erc721, or erc1155."
+      },
+      examplePaidUrl: `${config.publicBaseUrl}/wallet-report?address=${
+        parsed.success ? parsed.data.address : "0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea"
+      }&chains=${encodeURIComponent(chains)}&limit=20`
+    });
+  });
+
+  app.use(validatePaidRouteQuery);
 
   const paymentMiddleware = createPaymentMiddleware();
   if (paymentMiddleware) {
@@ -202,6 +251,40 @@ export function createApp() {
   });
 
   return app;
+}
+
+function validatePaidRouteQuery(req: express.Request, res: express.Response, next: express.NextFunction) {
+  if (req.method !== "GET") {
+    next();
+    return;
+  }
+
+  const schema = paidQuerySchemas[req.path as keyof typeof paidQuerySchemas];
+  if (!schema) {
+    next();
+    return;
+  }
+
+  const parsed = schema.safeParse(req.query);
+  if (!parsed.success) {
+    res.status(400).json(buildInvalidRequestBody(req.path, parsed.error));
+    return;
+  }
+
+  next();
+}
+
+function buildInvalidRequestBody(path: string, error: z.ZodError) {
+  return {
+    error: "Invalid request",
+    message: "WalletLens paid endpoints require a valid EVM address before x402 payment negotiation.",
+    details: error.flatten(),
+    quote: `${config.publicBaseUrl}/quote`,
+    requiredParams: {
+      address: "EVM address, 0x plus 40 hex characters"
+    },
+    example: `${config.publicBaseUrl}${path}?address=0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea&chains=base`
+  };
 }
 
 function getPaidResources() {

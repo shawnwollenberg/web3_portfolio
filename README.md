@@ -38,6 +38,12 @@ Free cached live preview:
 curl http://localhost:3000/preview
 ```
 
+Free paid-call quote:
+
+```bash
+curl "http://localhost:3000/quote?address=0x0000000000000000000000000000000000000000&chains=base"
+```
+
 Portfolio request:
 
 ```bash
@@ -179,6 +185,7 @@ The deploy output includes `PortfolioApiUrl`. Use that base URL for:
 - `GET /health`
 - `GET /status`
 - `GET /preview`
+- `GET /quote?address=...&chains=base`
 - `GET /pricing`
 - `GET /examples`
 - `GET /.well-known/x402.json`

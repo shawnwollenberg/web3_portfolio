@@ -7,6 +7,8 @@ type ResponseStats = {
   transactionCount?: number;
   totalValueBucket?: string | null;
   chains?: string[];
+  error?: string;
+  errorReason?: string;
 };
 
 type SettlementResponse = {
@@ -70,6 +72,14 @@ function summarizeResponse(path: string, body: unknown): ResponseStats | undefin
   if (!body || typeof body !== "object") return undefined;
   const data = body as Record<string, unknown>;
 
+  const error = stringOrUndefined(data.error);
+  if (error) {
+    return {
+      error,
+      errorReason: extractErrorReason(data)
+    };
+  }
+
   if (path === "/portfolio") {
     const summary = objectOrUndefined(data.summary);
     return {
@@ -97,6 +107,14 @@ function summarizeResponse(path: string, body: unknown): ResponseStats | undefin
     };
   }
 
+  return undefined;
+}
+
+function extractErrorReason(data: Record<string, unknown>): string | undefined {
+  const details = objectOrUndefined(data.details);
+  const fieldErrors = objectOrUndefined(details?.fieldErrors);
+  const addressErrors = fieldErrors?.address;
+  if (Array.isArray(addressErrors) && typeof addressErrors[0] === "string") return `address: ${addressErrors[0]}`;
   return undefined;
 }
 
