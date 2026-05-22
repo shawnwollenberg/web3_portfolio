@@ -45,6 +45,24 @@
         }
       }
     },
+    "/discover": {
+      "get": {
+        "summary": "Machine-readable agent discovery entrypoint",
+        "description": "Returns WalletLens capabilities, x402 payment details, free resource links, paid resources, supported chains, and copy-paste examples for agent clients.",
+        "responses": {
+          "200": {
+            "description": "Agent discovery payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/preview": {
       "get": {
         "summary": "Free cached live WalletLens response preview",
@@ -82,14 +100,49 @@
     },
     "/examples": {
       "get": {
-        "summary": "Human-readable examples page",
+        "summary": "Examples page or machine-readable examples",
+        "parameters": [
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["json"]
+            },
+            "description": "Use format=json for agent-readable examples."
+          }
+        ],
         "responses": {
           "200": {
-            "description": "Examples HTML",
+            "description": "Examples HTML or JSON",
             "content": {
               "text/html": {
                 "schema": {
                   "type": "string"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/.well-known/x402": {
+      "get": {
+        "summary": "x402 discovery metadata alias",
+        "description": "Alias for /.well-known/x402.json for clients that omit the .json suffix.",
+        "responses": {
+          "200": {
+            "description": "Paid resource metadata",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/X402Discovery"
                 }
               }
             }
@@ -110,6 +163,47 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/quote": {
+      "get": {
+        "summary": "Free quote and call guidance",
+        "description": "Validates an intended wallet analysis request and returns price, payment network, required parameters, and copy-paste paid endpoint examples.",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^0x[a-fA-F0-9]{40}$"
+            }
+          },
+          {
+            "name": "chains",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "base"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Quote payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request"
           }
         }
       }

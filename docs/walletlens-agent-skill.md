@@ -7,10 +7,12 @@ Use this skill when an agent needs EVM wallet intelligence, a normalized portfol
 - Name: WalletLens API
 - Base URL: `https://walletlens.wallyweb.com`
 - Paid endpoints: `GET /portfolio`, `GET /tx-history`, `GET /wallet-report`
+- Agent discovery: `GET /discover`
 - Free preview: `GET /preview`
 - Status/resource index: `GET /status`
-- Discovery: `GET /.well-known/x402.json`
+- Discovery: `GET /.well-known/x402.json` or `GET /.well-known/x402`
 - OpenAPI: `GET /openapi.json`
+- Examples: `GET /examples?format=json`
 - Local MCP server: `npm run mcp`
 - Payment protocol: x402
 - Payment network: Base mainnet, `eip155:8453`
@@ -42,10 +44,12 @@ Do not use WalletLens for:
 Before paying, inspect the free cached live preview:
 
 ```text
+GET https://walletlens.wallyweb.com/discover
+GET https://walletlens.wallyweb.com/quote?address=<evmAddress>&chains=<chains>
 GET https://walletlens.wallyweb.com/preview
 ```
 
-Use the preview to confirm the response shape. It is limited to the configured demo wallet and returns compact token/activity arrays. Use the paid endpoint when live data for an arbitrary wallet or full output is needed.
+Use `/discover` to find capabilities and examples. Use `/quote` to validate the address and inspect price before payment. Use the preview to confirm the response shape. It is limited to the configured demo wallet and returns compact token/activity arrays. Use the paid endpoint when live data for an arbitrary wallet or full output is needed.
 
 ```text
 GET https://walletlens.wallyweb.com/portfolio?address=<evmAddress>&chains=<chains>
@@ -82,6 +86,8 @@ Supported chains:
 Unpaid test:
 
 ```bash
+curl "https://walletlens.wallyweb.com/quote?address=0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea&chains=base"
+curl https://walletlens.wallyweb.com/discover
 curl -i "https://walletlens.wallyweb.com/portfolio?address=0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045&chains=base,ethereum"
 curl -i "https://walletlens.wallyweb.com/tx-history?address=0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea&chains=base&limit=20"
 curl -i "https://walletlens.wallyweb.com/wallet-report?address=0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea&chains=base&limit=20"

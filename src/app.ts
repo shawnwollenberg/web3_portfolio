@@ -47,8 +47,21 @@ export function createApp() {
     res.sendFile("pricing.html", { root: "public" });
   });
 
-  app.get("/examples", (_req, res) => {
+  app.get("/examples", (req, res) => {
+    if (wantsJson(req)) {
+      res.json(buildExamples());
+      return;
+    }
+
     res.sendFile("examples.html", { root: "public" });
+  });
+
+  app.get("/discover", (_req, res) => {
+    res.json(buildDiscoverPayload());
+  });
+
+  app.get("/walletlens-agent-skill.md", (_req, res) => {
+    res.sendFile("walletlens-agent-skill.md", { root: "docs" });
   });
 
   app.get("/health", (_req, res) => {
@@ -75,10 +88,12 @@ export function createApp() {
         "/preview",
         "/pricing",
         "/examples",
+        "/discover",
         "/llms.txt",
         "/llms-full.txt",
         "/openapi.json",
         "/quote",
+        "/.well-known/x402",
         "/.well-known/x402.json"
       ],
       supportedChains: ["base", "ethereum", "optimism", "arbitrum", "polygon"],
@@ -87,6 +102,9 @@ export function createApp() {
         llms: `${config.publicBaseUrl}/llms.txt`,
         llmsFull: `${config.publicBaseUrl}/llms-full.txt`,
         skill: `${config.publicBaseUrl}/docs/walletlens-agent-skill.md`,
+        skillAlias: `${config.publicBaseUrl}/walletlens-agent-skill.md`,
+        discover: `${config.publicBaseUrl}/discover`,
+        examples: `${config.publicBaseUrl}/examples`,
         x402: `${config.publicBaseUrl}/.well-known/x402.json`
       }
     });
@@ -133,14 +151,8 @@ export function createApp() {
     }
   });
 
-  app.get("/.well-known/x402.json", (_req, res) => {
-    res.json({
-      version: "1",
-      service: "WalletLens",
-      description:
-        "Agent-native EVM wallet intelligence suite for portfolio snapshots, token balances, Base wallet lookup, USDC transfers, and enriched transaction history.",
-      resources: getPaidResources()
-    });
+  app.get(["/.well-known/x402.json", "/.well-known/x402"], (_req, res) => {
+    res.json(buildX402Discovery());
   });
 
   app.get("/quote", (req, res) => {
@@ -168,6 +180,7 @@ export function createApp() {
       asset: "USDC",
       paymentProtocol: "x402",
       paidEndpoints: getPaidResources(),
+      howToCall: getHowToCallExamples(),
       requiredParams: {
         address: "EVM address, 0x plus 40 hex characters"
       },
@@ -251,6 +264,150 @@ export function createApp() {
   });
 
   return app;
+}
+
+function wantsJson(req: express.Request) {
+  return req.query.format === "json" || req.accepts(["html", "json"]) === "json";
+}
+
+function buildX402Discovery() {
+  return {
+    version: "1",
+    service: "WalletLens",
+    description:
+      "Agent-native EVM wallet intelligence suite for portfolio snapshots, token balances, Base wallet lookup, USDC transfers, and enriched transaction history.",
+    baseUrl: config.publicBaseUrl,
+    discovery: {
+      canonical: `${config.publicBaseUrl}/.well-known/x402.json`,
+      alias: `${config.publicBaseUrl}/.well-known/x402`
+    },
+    howToCall: getHowToCallExamples(),
+    resources: getPaidResources()
+  };
+}
+
+function buildDiscoverPayload() {
+  return {
+    ok: true,
+    service: "WalletLens",
+    description:
+      "WalletLens is an x402-paid EVM wallet intelligence API for agents. Use it for portfolio snapshots, transaction history, and bundled wallet reports.",
+    baseUrl: config.publicBaseUrl,
+    payment: {
+      protocol: "x402",
+      scheme: "exact",
+      network: paymentRouteConfig["GET /wallet-report"].accepts.network,
+      asset: "USDC",
+      defaultPrice: paymentRouteConfig["GET /wallet-report"].accepts.price
+    },
+    recommendedFlow: [
+      "Call /quote with address and chains to validate the request and inspect pricing.",
+      "Call /wallet-report for one paid response that includes portfolio plus transaction history.",
+      "If the response is HTTP 402, parse the payment-required header, create an x402 payment, and retry the same URL with the payment header."
+    ],
+    useCases: [
+      "analyze this wallet",
+      "summarize this Base wallet",
+      "get token balances for an EVM address",
+      "find recent USDC transfers",
+      "get enriched transaction history",
+      "combine wallet portfolio and recent activity"
+    ],
+    freeResources: {
+      status: `${config.publicBaseUrl}/status`,
+      quote: `${config.publicBaseUrl}/quote?address=0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea&chains=base`,
+      preview: `${config.publicBaseUrl}/preview`,
+      examples: `${config.publicBaseUrl}/examples?format=json`,
+      openapi: `${config.publicBaseUrl}/openapi.json`,
+      llms: `${config.publicBaseUrl}/llms.txt`,
+      llmsFull: `${config.publicBaseUrl}/llms-full.txt`,
+      skill: `${config.publicBaseUrl}/docs/walletlens-agent-skill.md`,
+      skillAlias: `${config.publicBaseUrl}/walletlens-agent-skill.md`,
+      x402: `${config.publicBaseUrl}/.well-known/x402.json`,
+      x402Alias: `${config.publicBaseUrl}/.well-known/x402`
+    },
+    paidResources: getPaidResources(),
+    howToCall: getHowToCallExamples(),
+    supportedChains: ["base", "ethereum", "optimism", "arbitrum", "polygon"]
+  };
+}
+
+function buildExamples() {
+  return {
+    service: "WalletLens",
+    baseUrl: config.publicBaseUrl,
+    description:
+      "Copy-paste examples for discovering WalletLens and making x402-paid EVM wallet intelligence calls.",
+    demoWallet: "0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea",
+    free: [
+      {
+        name: "Discover WalletLens capabilities",
+        method: "GET",
+        url: `${config.publicBaseUrl}/discover`,
+        curl: `curl ${config.publicBaseUrl}/discover`
+      },
+      {
+        name: "Get a quote before paying",
+        method: "GET",
+        url: `${config.publicBaseUrl}/quote?address=0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea&chains=base`,
+        curl: `curl "${config.publicBaseUrl}/quote?address=0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea&chains=base"`
+      },
+      {
+        name: "Read x402 discovery metadata",
+        method: "GET",
+        url: `${config.publicBaseUrl}/.well-known/x402.json`,
+        curl: `curl ${config.publicBaseUrl}/.well-known/x402.json`
+      },
+      {
+        name: "Inspect a free cached preview response",
+        method: "GET",
+        url: `${config.publicBaseUrl}/preview`,
+        curl: `curl ${config.publicBaseUrl}/preview`
+      }
+    ],
+    paidNegotiation: getHowToCallExamples(),
+    localPaidTest: [
+      "Add a funded Base wallet private key to .env as X402_TEST_PRIVATE_KEY.",
+      "Run: npm run test:x402 -- --endpoint wallet-report --address 0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea --chains base --limit 20"
+    ],
+    notes: [
+      "Missing or invalid address returns HTTP 400 before payment negotiation.",
+      "A valid unpaid paid-endpoint request returns HTTP 402 with a payment-required header.",
+      "After creating the x402 payment payload, retry the exact same URL with the payment header."
+    ]
+  };
+}
+
+function getHowToCallExamples() {
+  const baseWallet = "0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea";
+  const ethWallet = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045";
+
+  return [
+    {
+      intent: "Get one bundled wallet report with portfolio and transaction history",
+      method: "GET",
+      path: "/wallet-report",
+      url: `${config.publicBaseUrl}/wallet-report?address=${baseWallet}&chains=base&limit=20`,
+      curl: `curl -i "${config.publicBaseUrl}/wallet-report?address=${baseWallet}&chains=base&limit=20"`,
+      expectedUnpaidStatus: 402
+    },
+    {
+      intent: "Get enriched transaction history only",
+      method: "GET",
+      path: "/tx-history",
+      url: `${config.publicBaseUrl}/tx-history?address=${baseWallet}&chains=base&limit=20`,
+      curl: `curl -i "${config.publicBaseUrl}/tx-history?address=${baseWallet}&chains=base&limit=20"`,
+      expectedUnpaidStatus: 402
+    },
+    {
+      intent: "Get normalized portfolio balances only",
+      method: "GET",
+      path: "/portfolio",
+      url: `${config.publicBaseUrl}/portfolio?address=${ethWallet}&chains=base,ethereum`,
+      curl: `curl -i "${config.publicBaseUrl}/portfolio?address=${ethWallet}&chains=base,ethereum"`,
+      expectedUnpaidStatus: 402
+    }
+  ];
 }
 
 function validatePaidRouteQuery(req: express.Request, res: express.Response, next: express.NextFunction) {
