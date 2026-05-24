@@ -8,7 +8,9 @@ Use this skill when an agent needs EVM wallet intelligence, a normalized portfol
 - Base URL: `https://walletlens.wallyweb.com`
 - Paid endpoints: `GET /portfolio`, `GET /tx-history`, `GET /wallet-report`
 - Agent discovery: `GET /discover`
+- Intent helpers: `GET /ask?q=...`, `GET /analyze?address=...&chains=...`
 - Free preview: `GET /preview`
+- Free response samples: `GET /examples/portfolio`, `GET /examples/tx-history`, `GET /examples/wallet-report`
 - Status/resource index: `GET /status`
 - Discovery: `GET /.well-known/x402.json` or `GET /.well-known/x402`
 - OpenAPI: `GET /openapi.json`
@@ -45,11 +47,13 @@ Before paying, inspect the free cached live preview:
 
 ```text
 GET https://walletlens.wallyweb.com/discover
+GET https://walletlens.wallyweb.com/ask?q=analyze wallet <evmAddress> on base
+GET https://walletlens.wallyweb.com/analyze?address=<evmAddress>&chains=<chains>
 GET https://walletlens.wallyweb.com/quote?address=<evmAddress>&chains=<chains>
 GET https://walletlens.wallyweb.com/preview
 ```
 
-Use `/discover` to find capabilities and examples. Use `/quote` to validate the address and inspect price before payment. Use the preview to confirm the response shape. It is limited to the configured demo wallet and returns compact token/activity arrays. Use the paid endpoint when live data for an arbitrary wallet or full output is needed.
+Use `/discover` to find capabilities and examples. Use `/ask` or `/analyze` to convert wallet-analysis intent into the recommended paid URL. Use `/quote` to validate the address and inspect price before payment. Use `/examples/wallet-report`, `/examples/tx-history`, and `/examples/portfolio` to inspect paid response shapes without payment. Use the paid endpoint when live data for an arbitrary wallet or full output is needed.
 
 ```text
 GET https://walletlens.wallyweb.com/portfolio?address=<evmAddress>&chains=<chains>
@@ -88,6 +92,9 @@ Unpaid test:
 ```bash
 curl "https://walletlens.wallyweb.com/quote?address=0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea&chains=base"
 curl https://walletlens.wallyweb.com/discover
+curl "https://walletlens.wallyweb.com/ask?q=analyze%20wallet%200x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea%20on%20base"
+curl "https://walletlens.wallyweb.com/analyze?address=0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea&chains=base"
+curl https://walletlens.wallyweb.com/examples/wallet-report
 curl -i "https://walletlens.wallyweb.com/portfolio?address=0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045&chains=base,ethereum"
 curl -i "https://walletlens.wallyweb.com/tx-history?address=0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea&chains=base&limit=20"
 curl -i "https://walletlens.wallyweb.com/wallet-report?address=0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea&chains=base&limit=20"

@@ -48,10 +48,84 @@
     "/discover": {
       "get": {
         "summary": "Machine-readable agent discovery entrypoint",
-        "description": "Returns WalletLens capabilities, x402 payment details, free resource links, paid resources, supported chains, and copy-paste examples for agent clients.",
+        "description": "Returns WalletLens capabilities, x402 payment details, free resource links, paid resources, supported chains, and copy-paste examples for agent clients. Start here when an agent is discovering what WalletLens can do.",
         "responses": {
           "200": {
             "description": "Agent discovery payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ask": {
+      "get": {
+        "summary": "Convert natural-language wallet intent into a paid WalletLens URL",
+        "description": "Free helper for agent workflows. Use when a user asks to analyze a wallet, summarize a Base wallet, inspect token holdings, find USDC transfers, or get transaction history. The response detects an EVM address from q, recommends /wallet-report, /portfolio, or /tx-history, and returns quoteUrl plus paidUrl.",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "examples": [
+                "analyze wallet 0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea on base",
+                "show recent USDC transfers for 0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea",
+                "get token balances for 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045 on ethereum"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Intent helper response with detected address, recommended endpoint, quoteUrl, and paidUrl",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/analyze": {
+      "get": {
+        "summary": "Build a paid WalletLens URL from structured wallet params",
+        "description": "Free helper for agents that already have an EVM address. Returns quoteUrl, paidUrl, price, network, and x402 next steps.",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^0x[a-fA-F0-9]{40}$",
+              "examples": ["0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea"]
+            },
+            "description": "EVM wallet address."
+          },
+          {
+            "name": "chains",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "base",
+              "examples": ["base", "base,ethereum"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Intent helper response with quoteUrl, paidUrl, price, network, and x402 next steps",
             "content": {
               "application/json": {
                 "schema": {
@@ -122,6 +196,60 @@
                   "type": "string"
                 }
               },
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/examples/portfolio": {
+      "get": {
+        "summary": "Free static sample shaped like paid /portfolio",
+        "description": "Returns a sample normalized portfolio response so agents can inspect the paid /portfolio response shape before making an x402 payment.",
+        "responses": {
+          "200": {
+            "description": "Sample portfolio response wrapper",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/examples/tx-history": {
+      "get": {
+        "summary": "Free static sample shaped like paid /tx-history",
+        "description": "Returns a sample TxLens transaction history response so agents can inspect decoded transfer rows, direction counts, labels, and pagination shape before making an x402 payment.",
+        "responses": {
+          "200": {
+            "description": "Sample transaction history response wrapper",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/examples/wallet-report": {
+      "get": {
+        "summary": "Free static sample shaped like paid /wallet-report",
+        "description": "Returns a sample bundled wallet report with portfolio and transaction history sections so agents can inspect the paid response before making an x402 payment.",
+        "responses": {
+          "200": {
+            "description": "Sample wallet report response wrapper",
+            "content": {
               "application/json": {
                 "schema": {
                   "type": "object"
@@ -211,7 +339,7 @@
     "/portfolio": {
       "get": {
         "summary": "Get a normalized wallet portfolio snapshot",
-        "description": "Requires x402 payment. Unpaid requests return HTTP 402 with a payment-required header.",
+        "description": "Requires x402 payment. Use this endpoint when the user asks for EVM token balances, wallet holdings, stablecoin totals, top holdings, or a normalized portfolio snapshot. Unpaid requests with a valid address return HTTP 402 with a payment-required header. If you do not have an address yet, call /ask or /analyze first.",
         "parameters": [
           {
             "name": "address",
@@ -219,7 +347,8 @@
             "required": true,
             "schema": {
               "type": "string",
-              "pattern": "^0x[a-fA-F0-9]{40}$"
+              "pattern": "^0x[a-fA-F0-9]{40}$",
+              "examples": ["0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"]
             },
             "description": "EVM wallet address."
           },
@@ -276,7 +405,7 @@
     "/tx-history": {
       "get": {
         "summary": "Get enriched wallet transaction history",
-        "description": "Requires x402 payment. Returns normalized multi-chain transfer history with direction, categorization, decoded summaries, labels, and basic insights.",
+        "description": "Requires x402 payment. Use this endpoint when the user asks for recent wallet activity, transaction history, USDC transfers, decoded transfer rows, counterparties, or Base transfer history. Returns normalized multi-chain transfer history with direction, categorization, decoded summaries, labels, and basic insights. If you do not have an address yet, call /ask or /analyze first.",
         "parameters": [
           {
             "name": "address",
@@ -284,7 +413,8 @@
             "required": true,
             "schema": {
               "type": "string",
-              "pattern": "^0x[a-fA-F0-9]{40}$"
+              "pattern": "^0x[a-fA-F0-9]{40}$",
+              "examples": ["0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea"]
             },
             "description": "EVM wallet address."
           },
@@ -294,7 +424,8 @@
             "required": false,
             "schema": {
               "type": "string",
-              "default": "base,ethereum"
+              "default": "base,ethereum",
+              "examples": ["base", "base,ethereum"]
             },
             "description": "Comma-separated supported chain slugs."
           },
@@ -365,7 +496,7 @@
     "/wallet-report": {
       "get": {
         "summary": "Get a bundled wallet report",
-        "description": "Requires x402 payment. Returns normalized EVM portfolio balances plus TxLens transaction history, top holdings, counterparties, decoded transfers, and wallet activity summary in one agent-friendly response.",
+        "description": "Requires x402 payment. Use this endpoint for broad user intents such as analyze this wallet, summarize this Base wallet, explain this onchain wallet activity, get portfolio and transaction history, show top holdings and counterparties, or inspect recent USDC transfers. Returns normalized EVM portfolio balances plus TxLens transaction history, top holdings, counterparties, decoded transfers, and wallet activity summary in one agent-friendly response. If unsure which paid endpoint to choose, use /wallet-report.",
         "parameters": [
           {
             "name": "address",
@@ -373,7 +504,8 @@
             "required": true,
             "schema": {
               "type": "string",
-              "pattern": "^0x[a-fA-F0-9]{40}$"
+              "pattern": "^0x[a-fA-F0-9]{40}$",
+              "examples": ["0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea"]
             },
             "description": "EVM wallet address."
           },
@@ -383,7 +515,8 @@
             "required": false,
             "schema": {
               "type": "string",
-              "default": "base,ethereum"
+              "default": "base,ethereum",
+              "examples": ["base", "base,ethereum"]
             },
             "description": "Comma-separated supported chain slugs."
           },

@@ -9,8 +9,13 @@ WalletLens provides machine-readable wallet intelligence for agents and automati
 - [Health](https://walletlens.wallyweb.com/health): Service health check.
 - [Status](https://walletlens.wallyweb.com/status): Machine-readable status, resources, pricing, and docs links.
 - [Discover](https://walletlens.wallyweb.com/discover): Machine-readable agent entrypoint with capabilities, paid resources, examples, and x402 flow.
+- [Ask](https://walletlens.wallyweb.com/ask?q=analyze%20wallet%200x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea%20on%20base): Free intent helper that turns natural-language wallet requests into paid URLs.
+- [Analyze](https://walletlens.wallyweb.com/analyze?address=0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea&chains=base): Free structured intent helper for agents that already have an address.
 - [Preview](https://walletlens.wallyweb.com/preview): Free cached live demo wallet response and portfolio shape.
 - [Examples](https://walletlens.wallyweb.com/examples?format=json): Copy-paste calls for agents.
+- [Sample wallet report](https://walletlens.wallyweb.com/examples/wallet-report): Free static sample shaped like the paid `/wallet-report` response.
+- [Sample transaction history](https://walletlens.wallyweb.com/examples/tx-history): Free static sample shaped like the paid `/tx-history` response.
+- [Sample portfolio](https://walletlens.wallyweb.com/examples/portfolio): Free static sample shaped like the paid `/portfolio` response.
 - [Pricing](https://walletlens.wallyweb.com/pricing): Price, network, and payment details.
 - [x402 discovery](https://walletlens.wallyweb.com/.well-known/x402.json): Paid resource metadata.
 - [x402 discovery alias](https://walletlens.wallyweb.com/.well-known/x402): Same metadata for clients that omit `.json`.
@@ -41,7 +46,7 @@ WalletLens provides machine-readable wallet intelligence for agents and automati
 
 ## Notes For Agents
 
-Start with `/discover`, `/.well-known/x402.json`, and `/openapi.json`. For unpaid requests to `/portfolio`, `/tx-history`, or `/wallet-report` with a valid `address`, expect HTTP `402` with a `payment-required` response header. Use an x402-capable client to satisfy the payment requirement, then retry the same request with the payment header.
+Start with `/discover`, `/ask`, `/analyze`, `/.well-known/x402.json`, and `/openapi.json`. For unpaid requests to `/portfolio`, `/tx-history`, or `/wallet-report` with a valid `address`, expect HTTP `402` with a `payment-required` response header. Use an x402-capable client to satisfy the payment requirement, then retry the same request with the payment header.
 
 Use `/wallet-report` when the agent needs one answer for "analyze this wallet", "summarize this Base wallet", "get EVM wallet portfolio and transaction history", "find recent USDC transfers", or "explain this onchain wallet activity".
 
@@ -51,6 +56,19 @@ Free quote:
 
 ```bash
 curl "https://walletlens.wallyweb.com/quote?address=0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea&chains=base"
+```
+
+Free intent helper:
+
+```bash
+curl "https://walletlens.wallyweb.com/ask?q=analyze%20wallet%200x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea%20on%20base"
+curl "https://walletlens.wallyweb.com/analyze?address=0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea&chains=base"
+```
+
+Free sample response:
+
+```bash
+curl https://walletlens.wallyweb.com/examples/wallet-report
 ```
 
 Paid wallet report negotiation:

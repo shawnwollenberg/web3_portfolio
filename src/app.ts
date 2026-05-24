@@ -3,18 +3,22 @@ import { z } from "zod";
 import { analyticsMiddleware } from "./analytics.js";
 import { config } from "./config.js";
 import { getPortfolioSnapshot, type PortfolioSnapshot } from "./portfolio.js";
-import { portfolioExample } from "./schemas.js";
+import { portfolioExample, txHistoryExample, walletReportExample } from "./schemas.js";
 import { getTxHistorySnapshot } from "./tx-history.js";
 import { getWalletReportSnapshot } from "./wallet-report.js";
 import { createPaymentMiddleware, paymentRouteConfig } from "./x402.js";
 
+const demoWallet = "0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea";
+const ethExampleWallet = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045";
+const evmAddressPattern = /^0x[a-fA-F0-9]{40}$/;
+
 const portfolioQuerySchema = z.object({
-  address: z.string().regex(/^0x[a-fA-F0-9]{40}$/),
+  address: z.string().regex(evmAddressPattern),
   chains: z.string().optional()
 });
 
 const txHistoryQuerySchema = z.object({
-  address: z.string().regex(/^0x[a-fA-F0-9]{40}$/),
+  address: z.string().regex(evmAddressPattern),
   chains: z.string().optional(),
   limit: z.coerce.number().int().positive().max(100).optional(),
   days: z.coerce.number().int().positive().max(365).optional(),
@@ -60,6 +64,22 @@ export function createApp() {
     res.json(buildDiscoverPayload());
   });
 
+  app.get(["/ask", "/analyze"], (req, res) => {
+    res.json(buildIntentPayload(req));
+  });
+
+  app.get("/examples/portfolio", (_req, res) => {
+    res.json(buildSamplePayload("/portfolio", portfolioExample));
+  });
+
+  app.get("/examples/tx-history", (_req, res) => {
+    res.json(buildSamplePayload("/tx-history", txHistoryExample));
+  });
+
+  app.get("/examples/wallet-report", (_req, res) => {
+    res.json(buildSamplePayload("/wallet-report", walletReportExample));
+  });
+
   app.get("/walletlens-agent-skill.md", (_req, res) => {
     res.sendFile("walletlens-agent-skill.md", { root: "docs" });
   });
@@ -89,6 +109,11 @@ export function createApp() {
         "/pricing",
         "/examples",
         "/discover",
+        "/ask",
+        "/analyze",
+        "/examples/portfolio",
+        "/examples/tx-history",
+        "/examples/wallet-report",
         "/llms.txt",
         "/llms-full.txt",
         "/openapi.json",
@@ -104,6 +129,8 @@ export function createApp() {
         skill: `${config.publicBaseUrl}/docs/walletlens-agent-skill.md`,
         skillAlias: `${config.publicBaseUrl}/walletlens-agent-skill.md`,
         discover: `${config.publicBaseUrl}/discover`,
+        ask: `${config.publicBaseUrl}/ask?q=analyze%20wallet%20${demoWallet}%20on%20base`,
+        analyze: `${config.publicBaseUrl}/analyze?address=${demoWallet}&chains=base`,
         examples: `${config.publicBaseUrl}/examples`,
         x402: `${config.publicBaseUrl}/.well-known/x402.json`
       }
@@ -191,7 +218,7 @@ export function createApp() {
         category: "all, external, internal, erc20, erc721, or erc1155."
       },
       examplePaidUrl: `${config.publicBaseUrl}/wallet-report?address=${
-        parsed.success ? parsed.data.address : "0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea"
+        parsed.success ? parsed.data.address : demoWallet
       }&chains=${encodeURIComponent(chains)}&limit=20`
     });
   });
@@ -301,6 +328,7 @@ function buildDiscoverPayload() {
       defaultPrice: paymentRouteConfig["GET /wallet-report"].accepts.price
     },
     recommendedFlow: [
+      "Call /ask?q=analyze wallet 0x... on base or /analyze?address=0x...&chains=base to convert natural-language intent into a paid URL.",
       "Call /quote with address and chains to validate the request and inspect pricing.",
       "Call /wallet-report for one paid response that includes portfolio plus transaction history.",
       "If the response is HTTP 402, parse the payment-required header, create an x402 payment, and retry the same URL with the payment header."
@@ -315,9 +343,14 @@ function buildDiscoverPayload() {
     ],
     freeResources: {
       status: `${config.publicBaseUrl}/status`,
-      quote: `${config.publicBaseUrl}/quote?address=0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea&chains=base`,
+      ask: `${config.publicBaseUrl}/ask?q=analyze%20wallet%20${demoWallet}%20on%20base`,
+      analyze: `${config.publicBaseUrl}/analyze?address=${demoWallet}&chains=base`,
+      quote: `${config.publicBaseUrl}/quote?address=${demoWallet}&chains=base`,
       preview: `${config.publicBaseUrl}/preview`,
       examples: `${config.publicBaseUrl}/examples?format=json`,
+      samplePortfolio: `${config.publicBaseUrl}/examples/portfolio`,
+      sampleTxHistory: `${config.publicBaseUrl}/examples/tx-history`,
+      sampleWalletReport: `${config.publicBaseUrl}/examples/wallet-report`,
       openapi: `${config.publicBaseUrl}/openapi.json`,
       llms: `${config.publicBaseUrl}/llms.txt`,
       llmsFull: `${config.publicBaseUrl}/llms-full.txt`,
@@ -338,8 +371,20 @@ function buildExamples() {
     baseUrl: config.publicBaseUrl,
     description:
       "Copy-paste examples for discovering WalletLens and making x402-paid EVM wallet intelligence calls.",
-    demoWallet: "0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea",
+    demoWallet,
     free: [
+      {
+        name: "Convert natural-language wallet intent into a paid URL",
+        method: "GET",
+        url: `${config.publicBaseUrl}/ask?q=analyze%20wallet%20${demoWallet}%20on%20base`,
+        curl: `curl "${config.publicBaseUrl}/ask?q=analyze%20wallet%20${demoWallet}%20on%20base"`
+      },
+      {
+        name: "Analyze intent with structured query params",
+        method: "GET",
+        url: `${config.publicBaseUrl}/analyze?address=${demoWallet}&chains=base`,
+        curl: `curl "${config.publicBaseUrl}/analyze?address=${demoWallet}&chains=base"`
+      },
       {
         name: "Discover WalletLens capabilities",
         method: "GET",
@@ -349,8 +394,8 @@ function buildExamples() {
       {
         name: "Get a quote before paying",
         method: "GET",
-        url: `${config.publicBaseUrl}/quote?address=0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea&chains=base`,
-        curl: `curl "${config.publicBaseUrl}/quote?address=0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea&chains=base"`
+        url: `${config.publicBaseUrl}/quote?address=${demoWallet}&chains=base`,
+        curl: `curl "${config.publicBaseUrl}/quote?address=${demoWallet}&chains=base"`
       },
       {
         name: "Read x402 discovery metadata",
@@ -363,12 +408,18 @@ function buildExamples() {
         method: "GET",
         url: `${config.publicBaseUrl}/preview`,
         curl: `curl ${config.publicBaseUrl}/preview`
+      },
+      {
+        name: "Inspect sample wallet report JSON without payment",
+        method: "GET",
+        url: `${config.publicBaseUrl}/examples/wallet-report`,
+        curl: `curl ${config.publicBaseUrl}/examples/wallet-report`
       }
     ],
     paidNegotiation: getHowToCallExamples(),
     localPaidTest: [
       "Add a funded Base wallet private key to .env as X402_TEST_PRIVATE_KEY.",
-      "Run: npm run test:x402 -- --endpoint wallet-report --address 0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea --chains base --limit 20"
+      `Run: npm run test:x402 -- --endpoint wallet-report --address ${demoWallet} --chains base --limit 20`
     ],
     notes: [
       "Missing or invalid address returns HTTP 400 before payment negotiation.",
@@ -379,35 +430,142 @@ function buildExamples() {
 }
 
 function getHowToCallExamples() {
-  const baseWallet = "0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea";
-  const ethWallet = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045";
-
   return [
     {
       intent: "Get one bundled wallet report with portfolio and transaction history",
       method: "GET",
       path: "/wallet-report",
-      url: `${config.publicBaseUrl}/wallet-report?address=${baseWallet}&chains=base&limit=20`,
-      curl: `curl -i "${config.publicBaseUrl}/wallet-report?address=${baseWallet}&chains=base&limit=20"`,
+      url: `${config.publicBaseUrl}/wallet-report?address=${demoWallet}&chains=base&limit=20`,
+      curl: `curl -i "${config.publicBaseUrl}/wallet-report?address=${demoWallet}&chains=base&limit=20"`,
       expectedUnpaidStatus: 402
     },
     {
       intent: "Get enriched transaction history only",
       method: "GET",
       path: "/tx-history",
-      url: `${config.publicBaseUrl}/tx-history?address=${baseWallet}&chains=base&limit=20`,
-      curl: `curl -i "${config.publicBaseUrl}/tx-history?address=${baseWallet}&chains=base&limit=20"`,
+      url: `${config.publicBaseUrl}/tx-history?address=${demoWallet}&chains=base&limit=20`,
+      curl: `curl -i "${config.publicBaseUrl}/tx-history?address=${demoWallet}&chains=base&limit=20"`,
       expectedUnpaidStatus: 402
     },
     {
       intent: "Get normalized portfolio balances only",
       method: "GET",
       path: "/portfolio",
-      url: `${config.publicBaseUrl}/portfolio?address=${ethWallet}&chains=base,ethereum`,
-      curl: `curl -i "${config.publicBaseUrl}/portfolio?address=${ethWallet}&chains=base,ethereum"`,
+      url: `${config.publicBaseUrl}/portfolio?address=${ethExampleWallet}&chains=base,ethereum`,
+      curl: `curl -i "${config.publicBaseUrl}/portfolio?address=${ethExampleWallet}&chains=base,ethereum"`,
       expectedUnpaidStatus: 402
     }
   ];
+}
+
+function buildIntentPayload(req: express.Request) {
+  const text = [
+    asString(req.query.q),
+    asString(req.query.prompt),
+    asString(req.query.intent),
+    asString(req.query.address),
+    asString(req.query.chains)
+  ]
+    .filter(Boolean)
+    .join(" ");
+  const address = extractAddress(text);
+  const chains = normalizeIntentChains(asString(req.query.chains) ?? extractChains(text));
+  const endpoint = chooseIntentEndpoint(text);
+  const validAddress = Boolean(address);
+
+  return {
+    ok: true,
+    service: "WalletLens",
+    description:
+      "Free intent helper. Converts wallet-analysis intent into a valid WalletLens paid URL, quote URL, and x402 instructions.",
+    input: {
+      q: asString(req.query.q) ?? null,
+      address: asString(req.query.address) ?? null,
+      chains: asString(req.query.chains) ?? null
+    },
+    detected: {
+      address: address ?? null,
+      addressValid: validAddress,
+      chains,
+      recommendedEndpoint: endpoint
+    },
+    readyToPay: validAddress,
+    quoteUrl: validAddress ? `${config.publicBaseUrl}/quote?address=${address}&chains=${encodeURIComponent(chains)}` : null,
+    paidUrl: validAddress
+      ? `${config.publicBaseUrl}${endpoint}?address=${address}&chains=${encodeURIComponent(chains)}${
+          endpoint === "/portfolio" ? "" : "&limit=20"
+        }`
+      : null,
+    price: paymentRouteConfig[`GET ${endpoint}` as keyof typeof paymentRouteConfig].accepts.price,
+    network: paymentRouteConfig[`GET ${endpoint}` as keyof typeof paymentRouteConfig].accepts.network,
+    asset: "USDC",
+    paymentProtocol: "x402",
+    nextSteps: validAddress
+      ? [
+          "Call quoteUrl for free validation and pricing.",
+          "Call paidUrl. A valid unpaid request returns HTTP 402 with a payment-required header.",
+          "Create the x402 payment payload and retry the exact same paidUrl with the payment header."
+        ]
+      : [
+          "Provide an EVM address as address=0x... or include one in q.",
+          `Try /analyze?address=${demoWallet}&chains=base`,
+          `Try /ask?q=analyze%20wallet%20${demoWallet}%20on%20base`
+        ],
+    examples: {
+      analyze: `${config.publicBaseUrl}/analyze?address=${demoWallet}&chains=base`,
+      ask: `${config.publicBaseUrl}/ask?q=analyze%20wallet%20${demoWallet}%20on%20base`,
+      sampleReport: `${config.publicBaseUrl}/examples/wallet-report`
+    }
+  };
+}
+
+function buildSamplePayload(path: "/portfolio" | "/tx-history" | "/wallet-report", sample: unknown) {
+  const route = paymentRouteConfig[`GET ${path}` as keyof typeof paymentRouteConfig];
+  return {
+    service: "WalletLens",
+    sample: true,
+    endpoint: path,
+    description:
+      "Free static sample shaped like the paid response. Use the paid endpoint with address and chains for live wallet data.",
+    paidEndpoint: `${config.publicBaseUrl}${path}`,
+    price: route.accepts.price,
+    network: route.accepts.network,
+    asset: "USDC",
+    examplePaidUrl: `${config.publicBaseUrl}${path}?address=${path === "/portfolio" ? ethExampleWallet : demoWallet}&chains=${
+      path === "/portfolio" ? "base,ethereum" : "base"
+    }${path === "/portfolio" ? "" : "&limit=20"}`,
+    response: sample
+  };
+}
+
+function extractAddress(text: string) {
+  return text.match(/0x[a-fA-F0-9]{40}/)?.[0] ?? null;
+}
+
+function chooseIntentEndpoint(text: string): "/portfolio" | "/tx-history" | "/wallet-report" {
+  const lower = text.toLowerCase();
+  if (lower.includes("transaction") || lower.includes("tx") || lower.includes("history") || lower.includes("transfer")) {
+    return "/tx-history";
+  }
+  if (lower.includes("portfolio") || lower.includes("balance") || lower.includes("holding") || lower.includes("token")) {
+    return "/portfolio";
+  }
+  return "/wallet-report";
+}
+
+function extractChains(text: string) {
+  const lower = text.toLowerCase();
+  const chains = ["base", "ethereum", "optimism", "arbitrum", "polygon"].filter(chain => lower.includes(chain));
+  if (lower.includes("eth") && !chains.includes("ethereum")) chains.push("ethereum");
+  return chains.length > 0 ? chains.join(",") : undefined;
+}
+
+function normalizeIntentChains(chains?: string) {
+  return chains?.trim() || "base";
+}
+
+function asString(value: unknown) {
+  return typeof value === "string" ? value : undefined;
 }
 
 function validatePaidRouteQuery(req: express.Request, res: express.Response, next: express.NextFunction) {
@@ -432,15 +590,26 @@ function validatePaidRouteQuery(req: express.Request, res: express.Response, nex
 }
 
 function buildInvalidRequestBody(path: string, error: z.ZodError) {
+  const endpoint = path as "/portfolio" | "/tx-history" | "/wallet-report";
   return {
     error: "Invalid request",
     message: "WalletLens paid endpoints require a valid EVM address before x402 payment negotiation.",
     details: error.flatten(),
+    hint: "To trigger x402 payment negotiation, retry with address=0x... and optional chains=base.",
     quote: `${config.publicBaseUrl}/quote`,
+    discover: `${config.publicBaseUrl}/discover`,
+    intentHelper: `${config.publicBaseUrl}/ask?q=analyze%20wallet%20${demoWallet}%20on%20base`,
+    examples: `${config.publicBaseUrl}/examples?format=json`,
+    sampleResponse: `${config.publicBaseUrl}/examples${endpoint}`,
     requiredParams: {
       address: "EVM address, 0x plus 40 hex characters"
     },
-    example: `${config.publicBaseUrl}${path}?address=0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea&chains=base`
+    example: `${config.publicBaseUrl}${path}?address=${demoWallet}&chains=base${path === "/portfolio" ? "" : "&limit=20"}`,
+    nextSteps: [
+      `Call /analyze?address=${demoWallet}&chains=base for a free intent response.`,
+      `Call /quote?address=${demoWallet}&chains=base for price and paid URL guidance.`,
+      "Call the example paid URL to receive HTTP 402 and complete x402 payment negotiation."
+    ]
   };
 }
 

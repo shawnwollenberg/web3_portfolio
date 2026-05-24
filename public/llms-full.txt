@@ -20,7 +20,12 @@ GET /preview
 GET /pricing
 GET /examples
 GET /examples?format=json
+GET /examples/portfolio
+GET /examples/tx-history
+GET /examples/wallet-report
 GET /discover
+GET /ask?q=analyze wallet 0x... on base
+GET /analyze?address=0x...&chains=base
 GET /.well-known/x402
 GET /.well-known/x402.json
 GET /openapi.json
@@ -33,10 +38,11 @@ GET /walletlens-agent-skill.md
 Recommended evaluation flow:
 
 1. Read `/discover` for capabilities, x402 payment details, and copy-paste examples.
-2. Read `/status` for resource, pricing, chain, and docs links.
-3. Read `/preview` for a free cached live demo wallet response.
-4. Read `/.well-known/x402.json` or request `/portfolio`, `/tx-history`, or `/wallet-report` with a valid `address` to get the x402 payment requirement.
-5. Pay only when live wallet data is needed.
+2. Call `/ask?q=analyze wallet 0x... on base` or `/analyze?address=0x...&chains=base` to convert intent into a valid paid URL.
+3. Read `/examples/wallet-report`, `/examples/tx-history`, or `/examples/portfolio` to inspect the paid response shape without payment.
+4. Read `/status` for resource, pricing, chain, and docs links.
+5. Read `/.well-known/x402.json` or request `/portfolio`, `/tx-history`, or `/wallet-report` with a valid `address` to get the x402 payment requirement.
+6. Pay only when live wallet data is needed.
 
 ## Payment
 
@@ -53,12 +59,13 @@ Payment details:
 
 Agent flow:
 
-1. Validate intent for free with `GET /quote?address=...&chains=...`.
-2. Request `GET /portfolio?address=...&chains=...`, `GET /tx-history?address=...&chains=...`, or `GET /wallet-report?address=...&chains=...`.
-3. If HTTP `402`, parse the `payment-required` header.
-4. Create and submit the x402 payment payload using an x402-compatible client.
-5. Retry the exact same request with the payment header.
-6. Parse the JSON response.
+1. Convert user intent for free with `GET /ask?q=...` or `GET /analyze?address=...&chains=...`.
+2. Validate the request for free with `GET /quote?address=...&chains=...`.
+3. Request `GET /portfolio?address=...&chains=...`, `GET /tx-history?address=...&chains=...`, or `GET /wallet-report?address=...&chains=...`.
+4. If HTTP `402`, parse the `payment-required` header.
+5. Create and submit the x402 payment payload using an x402-compatible client.
+6. Retry the exact same request with the payment header.
+7. Parse the JSON response.
 
 Missing or invalid `address` returns HTTP `400` before payment negotiation. A valid unpaid paid-endpoint request returns HTTP `402`.
 
@@ -218,6 +225,21 @@ Agent discovery:
 ```bash
 curl https://walletlens.wallyweb.com/discover
 curl "https://walletlens.wallyweb.com/examples?format=json"
+```
+
+Intent helpers:
+
+```bash
+curl "https://walletlens.wallyweb.com/ask?q=analyze%20wallet%200x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea%20on%20base"
+curl "https://walletlens.wallyweb.com/analyze?address=0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea&chains=base"
+```
+
+Free sample paid-response shapes:
+
+```bash
+curl https://walletlens.wallyweb.com/examples/wallet-report
+curl https://walletlens.wallyweb.com/examples/tx-history
+curl https://walletlens.wallyweb.com/examples/portfolio
 ```
 
 Free quote:
