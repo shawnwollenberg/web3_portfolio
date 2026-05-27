@@ -63,6 +63,41 @@
         }
       }
     },
+    "/wallets-to-try": {
+      "get": {
+        "summary": "Seed wallet addresses with direct WalletLens helper and paid URLs",
+        "description": "Returns a human-readable page by default and JSON when requested with Accept: application/json or format=json. Use this endpoint to find valid EVM addresses, free ask/analyze/quote URLs, and direct paid /wallet-report URLs that trigger x402 negotiation.",
+        "parameters": [
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["json"]
+            },
+            "description": "Use format=json for agent-readable seeded wallet URLs."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Seed wallets HTML or JSON",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/ask": {
       "get": {
         "summary": "Convert natural-language wallet intent into a paid WalletLens URL",

@@ -24,6 +24,8 @@ GET /examples/portfolio
 GET /examples/tx-history
 GET /examples/wallet-report
 GET /discover
+GET /wallets-to-try
+GET /wallets-to-try?format=json
 GET /ask?q=analyze wallet 0x... on base
 GET /analyze?address=0x...&chains=base
 GET /.well-known/x402
@@ -38,11 +40,12 @@ GET /walletlens-agent-skill.md
 Recommended evaluation flow:
 
 1. Read `/discover` for capabilities, x402 payment details, and copy-paste examples.
-2. Call `/ask?q=analyze wallet 0x... on base` or `/analyze?address=0x...&chains=base` to convert intent into a valid paid URL.
-3. Read `/examples/wallet-report`, `/examples/tx-history`, or `/examples/portfolio` to inspect the paid response shape without payment.
-4. Read `/status` for resource, pricing, chain, and docs links.
-5. Read `/.well-known/x402.json` or request `/portfolio`, `/tx-history`, or `/wallet-report` with a valid `address` to get the x402 payment requirement.
-6. Pay only when live wallet data is needed.
+2. Read `/wallets-to-try` for seeded wallet addresses with direct helper, quote, and paid URLs.
+3. Call `/ask?q=analyze wallet 0x... on base` or `/analyze?address=0x...&chains=base` to convert intent into a valid paid URL.
+4. Read `/examples/wallet-report`, `/examples/tx-history`, or `/examples/portfolio` to inspect the paid response shape without payment.
+5. Read `/status` for resource, pricing, chain, and docs links.
+6. Read `/.well-known/x402.json` or request `/portfolio`, `/tx-history`, or `/wallet-report` with a valid `address` to get the x402 payment requirement.
+7. Pay only when live wallet data is needed.
 
 ## Payment
 
@@ -224,6 +227,7 @@ Agent discovery:
 
 ```bash
 curl https://walletlens.wallyweb.com/discover
+curl "https://walletlens.wallyweb.com/wallets-to-try?format=json"
 curl "https://walletlens.wallyweb.com/examples?format=json"
 ```
 

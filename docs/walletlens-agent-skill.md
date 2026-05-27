@@ -8,6 +8,7 @@ Use this skill when an agent needs EVM wallet intelligence, a normalized portfol
 - Base URL: `https://walletlens.wallyweb.com`
 - Paid endpoints: `GET /portfolio`, `GET /tx-history`, `GET /wallet-report`
 - Agent discovery: `GET /discover`
+- Seed wallets: `GET /wallets-to-try`
 - Intent helpers: `GET /ask?q=...`, `GET /analyze?address=...&chains=...`
 - Free preview: `GET /preview`
 - Free response samples: `GET /examples/portfolio`, `GET /examples/tx-history`, `GET /examples/wallet-report`
@@ -47,13 +48,14 @@ Before paying, inspect the free cached live preview:
 
 ```text
 GET https://walletlens.wallyweb.com/discover
+GET https://walletlens.wallyweb.com/wallets-to-try
 GET https://walletlens.wallyweb.com/ask?q=analyze wallet <evmAddress> on base
 GET https://walletlens.wallyweb.com/analyze?address=<evmAddress>&chains=<chains>
 GET https://walletlens.wallyweb.com/quote?address=<evmAddress>&chains=<chains>
 GET https://walletlens.wallyweb.com/preview
 ```
 
-Use `/discover` to find capabilities and examples. Use `/ask` or `/analyze` to convert wallet-analysis intent into the recommended paid URL. Use `/quote` to validate the address and inspect price before payment. Use `/examples/wallet-report`, `/examples/tx-history`, and `/examples/portfolio` to inspect paid response shapes without payment. Use the paid endpoint when live data for an arbitrary wallet or full output is needed.
+Use `/discover` to find capabilities and examples. Use `/wallets-to-try` to get seeded wallet addresses with direct helper and paid report URLs. Use `/ask` or `/analyze` to convert wallet-analysis intent into the recommended paid URL. Use `/quote` to validate the address and inspect price before payment. Use `/examples/wallet-report`, `/examples/tx-history`, and `/examples/portfolio` to inspect paid response shapes without payment. Use the paid endpoint when live data for an arbitrary wallet or full output is needed.
 
 ```text
 GET https://walletlens.wallyweb.com/portfolio?address=<evmAddress>&chains=<chains>
@@ -92,6 +94,7 @@ Unpaid test:
 ```bash
 curl "https://walletlens.wallyweb.com/quote?address=0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea&chains=base"
 curl https://walletlens.wallyweb.com/discover
+curl "https://walletlens.wallyweb.com/wallets-to-try?format=json"
 curl "https://walletlens.wallyweb.com/ask?q=analyze%20wallet%200x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea%20on%20base"
 curl "https://walletlens.wallyweb.com/analyze?address=0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea&chains=base"
 curl https://walletlens.wallyweb.com/examples/wallet-report

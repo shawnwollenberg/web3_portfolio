@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+
+# WalletLens agent discovery
+LLMs: https://walletlens.wallyweb.com/llms.txt
+OpenAPI: https://walletlens.wallyweb.com/openapi.json
+Discover: https://walletlens.wallyweb.com/discover
+Wallets-To-Try: https://walletlens.wallyweb.com/wallets-to-try
+X402: https://walletlens.wallyweb.com/.well-known/x402
