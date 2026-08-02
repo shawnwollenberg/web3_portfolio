@@ -19,7 +19,7 @@ export const portfolioOutputSchema = {
   type: "object",
   properties: {
     address: { type: "string" },
-    timestamp: { type: "string", format: "date-time" },
+    timestamp: { type: "string", description: "ISO 8601 date-time." },
     chains: { type: "array", items: { type: "string" } },
     summary: {
       type: "object",
@@ -106,7 +106,10 @@ export const portfolioExample = {
         valueUsd: "1000.00"
       }
     ],
-    warnings: ["2 tokens are missing USD prices"]
+    warnings: [
+      "2 tokens are missing USD prices",
+      "Stablecoin totals are symbol-based and may include unverified token contracts."
+    ]
   },
   tokens: [],
   positions: [],
@@ -138,7 +141,7 @@ export const txHistoryInputSchema = {
       default: 30,
       minimum: 1,
       maximum: 365,
-      description: "Requested lookback window. Currently reported as intent while newest transfers are fetched."
+      description: "Lookback window applied to transaction timestamps."
     },
     category: {
       type: "string",
@@ -155,7 +158,7 @@ export const txHistoryOutputSchema = {
   type: "object",
   properties: {
     address: { type: "string" },
-    timestamp: { type: "string", format: "date-time" },
+    timestamp: { type: "string", description: "ISO 8601 date-time." },
     chains: { type: "array", items: { type: "string" } },
     request: { type: "object" },
     summary: { type: "object" },
@@ -213,7 +216,10 @@ export const txHistoryExample = {
       { asset: "USDC", count: 1 },
       { asset: "ETH", count: 1 }
     ],
-    warnings: ["USD values are currently null for transaction history."]
+    warnings: [
+      "Stablecoin totals are symbol-based and may include unverified token contracts.",
+      "USD values are currently null for transaction history."
+    ]
   },
   transactions: [
     {
@@ -264,7 +270,7 @@ export const walletReportInputSchema = {
     },
     limit: {
       type: "integer",
-      default: 25,
+      default: 50,
       minimum: 1,
       maximum: 100,
       description: "Maximum enriched transaction rows to include in the bundled report."
@@ -274,7 +280,7 @@ export const walletReportInputSchema = {
       default: 30,
       minimum: 1,
       maximum: 365,
-      description: "Requested transaction lookback intent."
+      description: "Lookback window applied to transaction timestamps."
     },
     category: {
       type: "string",
@@ -291,7 +297,7 @@ export const walletReportOutputSchema = {
   type: "object",
   properties: {
     address: { type: "string" },
-    timestamp: { type: "string", format: "date-time" },
+    timestamp: { type: "string", description: "ISO 8601 date-time." },
     chains: { type: "array", items: { type: "string" } },
     request: { type: "object" },
     summary: {

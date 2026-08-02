@@ -56,7 +56,7 @@ export const paymentRouteConfig = {
     },
     resource: `${config.publicBaseUrl}/tx-history`,
     description:
-      "TxLens EVM transaction history API for Base and Ethereum wallets, USDC transfers, decoded token transfers, counterparties, direction, categorization, labels, risk flags, and wallet activity summaries.",
+      "TxLens EVM transaction history API for Base and Ethereum wallets, USDC transfers, normalized transfer summaries, counterparties, direction, categorization, labels, data-quality flags, and wallet activity summaries.",
     mimeType: "application/json",
     extensions: {
       ...declareDiscoveryExtension({
@@ -85,7 +85,7 @@ export const paymentRouteConfig = {
     },
     resource: `${config.publicBaseUrl}/wallet-report`,
     description:
-      "WalletLens wallet report API for agents: one paid x402 call returns EVM portfolio balances plus TxLens transaction history, Base USDC activity, top holdings, counterparties, decoded transfers, and wallet analysis summary.",
+      "WalletLens wallet report API for agents: one paid x402 call returns EVM portfolio balances plus TxLens transaction history, Base USDC activity, top holdings, counterparties, normalized transfer summaries, and wallet activity statistics.",
     mimeType: "application/json",
     extensions: {
       ...declareDiscoveryExtension({

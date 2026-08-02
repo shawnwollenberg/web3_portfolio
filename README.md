@@ -68,6 +68,13 @@ Discovery:
 curl http://localhost:3000/.well-known/x402.json
 ```
 
+Verify that production returns Bazaar metadata and is indexed by Coinbase's
+merchant and semantic discovery APIs:
+
+```bash
+npm run check:discovery
+```
+
 ## Paid x402 Test
 
 Use a dedicated test wallet. Do not use a high-value wallet or commit the private key.
@@ -123,20 +130,53 @@ npm run analytics:recent -- --hours 168 --profile wallyweb --region us-east-2
 
 ## MCP Server
 
-WalletLens includes a local stdio MCP server for agent clients.
+WalletLens publishes a local stdio MCP server for Codex, Claude Desktop, Cursor,
+and other MCP-compatible agent clients:
 
-Run it directly:
-
-```bash
-npm run mcp
+```text
+https://www.npmjs.com/package/@shawnwollenberg/walletlens-mcp
 ```
 
-For paid portfolio calls through MCP, set one of these in the MCP server environment:
+Run the published package without cloning this repository:
+
+```bash
+npx --yes @shawnwollenberg/walletlens-mcp@0.1.0
+```
+
+Repository contributors can run the same server from source with `npm run mcp`.
+Free discovery tools require no wallet. For paid calls, set a dedicated,
+low-balance agent wallet in the MCP server environment:
 
 ```bash
 WALLETLENS_X402_PRIVATE_KEY=0x...
-# or
-X402_TEST_PRIVATE_KEY=0x...
+```
+
+The MCP client defaults to a maximum payment of `$0.02` and accepts only exact
+Base-mainnet USDC requirements for the requested WalletLens endpoint. It also
+pins the live WalletLens recipient by default:
+
+```bash
+WALLETLENS_MAX_PAYMENT_USDC=0.02
+WALLETLENS_EXPECTED_PAY_TO=0xA7c82E9775A9594c673E3Fde8a42D3D17dE2B957
+WALLETLENS_REQUEST_TIMEOUT_MS=20000
+```
+
+Example MCP client configuration:
+
+```json
+{
+  "mcpServers": {
+    "walletlens": {
+      "command": "npx",
+      "args": ["--yes", "@shawnwollenberg/walletlens-mcp@0.1.0"],
+      "env": {
+        "WALLETLENS_X402_PRIVATE_KEY": "0xYOUR_DEDICATED_AGENT_PRIVATE_KEY",
+        "WALLETLENS_MAX_PAYMENT_USDC": "0.02",
+        "WALLETLENS_EXPECTED_PAY_TO": "0xA7c82E9775A9594c673E3Fde8a42D3D17dE2B957"
+      }
+    }
+  }
+}
 ```
 
 Available tools:
@@ -146,6 +186,7 @@ Available tools:
 - `get_openapi_schema`
 - `get_portfolio`
 - `get_tx_history`
+- `get_wallet_report`
 
 ## AWS Deployment
 
@@ -166,6 +207,7 @@ ROOT_DOMAIN=wallyweb.com
 CUSTOM_DOMAIN=walletlens.wallyweb.com
 PUBLIC_BASE_URL=https://walletlens.wallyweb.com
 ANALYTICS_IP_SALT=random-long-string
+PROVIDER_TIMEOUT_MS=10000
 ```
 
 Bootstrap CDK once per account/region if needed:

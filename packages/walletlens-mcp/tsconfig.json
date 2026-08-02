@@ -9,8 +9,10 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "outDir": "dist",
-    "rootDir": ".",
-    "types": ["node"]
+    "rootDir": "src",
+    "types": ["node"],
+    "declaration": true,
+    "sourceMap": false
   },
-  "include": ["src/**/*.ts", "infra/**/*.ts", "test/**/*.ts", "scripts/**/*.ts", "packages/walletlens-mcp/src/**/*.ts"]
+  "include": ["src/**/*.ts"]
 }

@@ -1,6 +1,7 @@
 import express from "express";
 import { z } from "zod";
 import { analyticsMiddleware } from "./analytics.js";
+import { parseChains } from "./chains.js";
 import { config } from "./config.js";
 import { getPortfolioSnapshot, type PortfolioSnapshot } from "./portfolio.js";
 import { portfolioExample, txHistoryExample, walletReportExample } from "./schemas.js";
@@ -10,6 +11,8 @@ import { createPaymentMiddleware, paymentRouteConfig } from "./x402.js";
 
 const demoWallet = "0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea";
 const ethExampleWallet = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045";
+const npmMcpPackage = "@shawnwollenberg/walletlens-mcp@0.1.0";
+const npmMcpUrl = "https://www.npmjs.com/package/@shawnwollenberg/walletlens-mcp";
 const evmAddressPattern = /^0x[a-fA-F0-9]{40}$/;
 const walletsToTry = [
   {
@@ -38,14 +41,25 @@ const walletsToTry = [
   }
 ] as const;
 
+const chainsQuerySchema = z.string().optional().superRefine((value, context) => {
+  try {
+    parseChains(value);
+  } catch (error) {
+    context.addIssue({
+      code: "custom",
+      message: error instanceof Error ? error.message : "Invalid chain selection"
+    });
+  }
+});
+
 const portfolioQuerySchema = z.object({
   address: z.string().regex(evmAddressPattern),
-  chains: z.string().optional()
+  chains: chainsQuerySchema
 });
 
 const txHistoryQuerySchema = z.object({
   address: z.string().regex(evmAddressPattern),
-  chains: z.string().optional(),
+  chains: chainsQuerySchema,
   limit: z.coerce.number().int().positive().max(100).optional(),
   days: z.coerce.number().int().positive().max(365).optional(),
   category: z.enum(["all", "external", "internal", "erc20", "erc721", "erc1155"]).optional()
@@ -64,6 +78,7 @@ type PreviewCache = {
 };
 
 let previewCache: PreviewCache | null = null;
+let previewInFlight: Promise<PortfolioSnapshot> | null = null;
 
 export function createApp() {
   const app = express();
@@ -158,6 +173,7 @@ export function createApp() {
         "/.well-known/x402.json"
       ],
       supportedChains: ["base", "ethereum", "optimism", "arbitrum", "polygon"],
+      mcp: buildMcpMetadata(),
       docs: {
         openapi: `${config.publicBaseUrl}/openapi.json`,
         llms: `${config.publicBaseUrl}/llms.txt`,
@@ -169,6 +185,7 @@ export function createApp() {
         ask: `${config.publicBaseUrl}/ask?q=analyze%20wallet%20${demoWallet}%20on%20base`,
         analyze: `${config.publicBaseUrl}/analyze?address=${demoWallet}&chains=base`,
         examples: `${config.publicBaseUrl}/examples`,
+        mcpPackage: npmMcpUrl,
         x402: `${config.publicBaseUrl}/.well-known/x402.json`
       }
     });
@@ -251,7 +268,7 @@ export function createApp() {
       optionalParams: {
         chains: "Comma-separated chain slugs. Supported: base, ethereum, optimism, arbitrum, polygon.",
         limit: "Transaction row limit for /tx-history and /wallet-report, 1-100.",
-        days: "Requested transaction lookback intent, 1-365.",
+        days: "Transaction lookback window in days, 1-365.",
         category: "all, external, internal, erc20, erc721, or erc1155."
       },
       examplePaidUrl: `${config.publicBaseUrl}/wallet-report?address=${
@@ -334,6 +351,20 @@ function wantsJson(req: express.Request) {
   return req.query.format === "json" || req.accepts(["html", "json"]) === "json";
 }
 
+function buildMcpMetadata() {
+  return {
+    transport: "stdio",
+    package: npmMcpPackage,
+    registry: npmMcpUrl,
+    run: `npx --yes ${npmMcpPackage}`,
+    freeTools: ["get_service_metadata", "get_supported_chains", "get_openapi_schema"],
+    paidTools: ["get_portfolio", "get_tx_history", "get_wallet_report"],
+    defaultMaxPaymentUsdc: "0.02",
+    network: "eip155:8453",
+    asset: "USDC"
+  };
+}
+
 function buildX402Discovery() {
   return {
     version: "1",
@@ -364,6 +395,7 @@ function buildDiscoverPayload() {
       asset: "USDC",
       defaultPrice: paymentRouteConfig["GET /wallet-report"].accepts.price
     },
+    mcp: buildMcpMetadata(),
     recommendedFlow: [
       "Call /wallets-to-try for seeded wallet addresses and direct paid URLs that demonstrate valid address requests.",
       "Call /ask?q=analyze wallet 0x... on base or /analyze?address=0x...&chains=base to convert natural-language intent into a paid URL.",
@@ -469,6 +501,7 @@ function buildExamples() {
       "Add a funded Base wallet private key to .env as X402_TEST_PRIVATE_KEY.",
       `Run: npm run test:x402 -- --endpoint wallet-report --address ${demoWallet} --chains base --limit 20`
     ],
+    mcp: buildMcpMetadata(),
     notes: [
       "Missing or invalid address returns HTTP 400 before payment negotiation.",
       "A valid unpaid paid-endpoint request returns HTTP 402 with a payment-required header.",
@@ -612,8 +645,10 @@ function buildIntentPayload(req: express.Request) {
     .join(" ");
   const address = extractAddress(text);
   const chains = normalizeIntentChains(asString(req.query.chains) ?? extractChains(text));
+  const parsedChains = chainsQuerySchema.safeParse(chains);
   const endpoint = chooseIntentEndpoint(text);
   const validAddress = Boolean(address);
+  const readyToPay = validAddress && parsedChains.success;
 
   return {
     ok: true,
@@ -629,11 +664,12 @@ function buildIntentPayload(req: express.Request) {
       address: address ?? null,
       addressValid: validAddress,
       chains,
+      chainsValid: parsedChains.success,
       recommendedEndpoint: endpoint
     },
-    readyToPay: validAddress,
-    quoteUrl: validAddress ? `${config.publicBaseUrl}/quote?address=${address}&chains=${encodeURIComponent(chains)}` : null,
-    paidUrl: validAddress
+    readyToPay,
+    quoteUrl: readyToPay ? `${config.publicBaseUrl}/quote?address=${address}&chains=${encodeURIComponent(chains)}` : null,
+    paidUrl: readyToPay
       ? `${config.publicBaseUrl}${endpoint}?address=${address}&chains=${encodeURIComponent(chains)}${
           endpoint === "/portfolio" ? "" : "&limit=20"
         }`
@@ -642,7 +678,7 @@ function buildIntentPayload(req: express.Request) {
     network: paymentRouteConfig[`GET ${endpoint}` as keyof typeof paymentRouteConfig].accepts.network,
     asset: "USDC",
     paymentProtocol: "x402",
-    nextSteps: validAddress
+    nextSteps: readyToPay
       ? [
           "Call quoteUrl for free validation and pricing.",
           "Call paidUrl. A valid unpaid request returns HTTP 402 with a payment-required header.",
@@ -650,6 +686,7 @@ function buildIntentPayload(req: express.Request) {
         ]
       : [
           "Provide an EVM address as address=0x... or include one in q.",
+          "Use only supported chain slugs: base, ethereum, optimism, arbitrum, or polygon.",
           `Try /analyze?address=${demoWallet}&chains=base`,
           `Try /ask?q=analyze%20wallet%20${demoWallet}%20on%20base`
         ],
@@ -686,10 +723,16 @@ function extractAddress(text: string) {
 
 function chooseIntentEndpoint(text: string): "/portfolio" | "/tx-history" | "/wallet-report" {
   const lower = text.toLowerCase();
-  if (lower.includes("transaction") || lower.includes("tx") || lower.includes("history") || lower.includes("transfer")) {
+  const requestsTransactions =
+    lower.includes("transaction") || lower.includes("tx") || lower.includes("history") || lower.includes("transfer");
+  const requestsPortfolio =
+    lower.includes("portfolio") || lower.includes("balance") || lower.includes("holding") || lower.includes("token");
+
+  if (requestsTransactions && requestsPortfolio) return "/wallet-report";
+  if (requestsTransactions) {
     return "/tx-history";
   }
-  if (lower.includes("portfolio") || lower.includes("balance") || lower.includes("holding") || lower.includes("token")) {
+  if (requestsPortfolio) {
     return "/portfolio";
   }
   return "/wallet-report";
@@ -785,6 +828,18 @@ async function getPreviewSnapshot(): Promise<PortfolioSnapshot> {
   if (previewCache && previewCache.expiresAt > now) {
     return previewCache.snapshot;
   }
+
+  if (previewInFlight) return previewInFlight;
+  previewInFlight = refreshPreviewSnapshot(now);
+
+  try {
+    return await previewInFlight;
+  } finally {
+    previewInFlight = null;
+  }
+}
+
+async function refreshPreviewSnapshot(now: number): Promise<PortfolioSnapshot> {
 
   let source: PreviewCache["source"] = "live";
   let snapshot: PortfolioSnapshot;

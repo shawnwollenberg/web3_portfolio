@@ -139,12 +139,8 @@ function getClientIp(req: Request): string | undefined {
 }
 
 function hashIp(ip: string | undefined): string | undefined {
-  if (!ip) return undefined;
-  return crypto
-    .createHash("sha256")
-    .update(`${config.analyticsIpSalt}:${ip}`)
-    .digest("hex")
-    .slice(0, 24);
+  if (!ip || !config.analyticsIpSalt) return undefined;
+  return crypto.createHmac("sha256", config.analyticsIpSalt).update(ip).digest("hex").slice(0, 24);
 }
 
 function normalizeQuery(query: Request["query"]): Record<string, unknown> {

@@ -47,6 +47,23 @@ Recommended evaluation flow:
 6. Read `/.well-known/x402.json` or request `/portfolio`, `/tx-history`, or `/wallet-report` with a valid `address` to get the x402 payment requirement.
 7. Pay only when live wallet data is needed.
 
+## MCP Package
+
+WalletLens is available as a published stdio MCP server:
+
+```bash
+npx --yes @shawnwollenberg/walletlens-mcp@0.1.0
+```
+
+The free MCP tools work without a wallet. Paid tools require
+`WALLETLENS_X402_PRIVATE_KEY` for a dedicated, low-balance agent wallet. The
+package defaults to a 0.02 USDC per-call ceiling and validates the exact scheme,
+Base mainnet network, Base USDC asset, WalletLens resource origin and path, and
+the pinned WalletLens recipient before signing. Each paid invocation makes at
+most one payment attempt.
+
+Package: https://www.npmjs.com/package/@shawnwollenberg/walletlens-mcp
+
 ## Payment
 
 WalletLens uses x402. Paid endpoints return HTTP `402 Payment Required` when no valid x402 payment is supplied.
@@ -105,7 +122,7 @@ Query parameters:
 - `address`: required EVM address, formatted as `0x` plus 40 hex characters.
 - `chains`: optional comma-separated chain list. Defaults to `base,ethereum`.
 - `limit`: optional result cap from 1 to 100. Defaults to `50`.
-- `days`: optional requested lookback intent from 1 to 365. Defaults to `30`.
+- `days`: optional transaction timestamp lookback from 1 to 365 days. Defaults to `30`.
 - `category`: optional `all`, `external`, `internal`, `erc20`, `erc721`, or `erc1155`.
 
 Example:
@@ -120,7 +137,7 @@ The paid response includes:
 - per-chain transaction counts
 - direction counts: `in`, `out`, `self`, `unknown`
 - action counts, such as `token_transfer`, `native_transfer`, `nft_transfer`
-- normalized transaction rows with `hash`, `timestamp`, `direction`, `counterparty`, `type`, `asset`, `value`, `decoded`, `labels`, and `riskFlags`
+- normalized transaction rows with `hash`, `timestamp`, `direction`, `counterparty`, `type`, `asset`, `value`, transfer summaries, labels, and data-quality flags
 
 ## Endpoint: GET /wallet-report
 
@@ -131,7 +148,7 @@ Query parameters:
 - `address`: required EVM address, formatted as `0x` plus 40 hex characters.
 - `chains`: optional comma-separated chain list. Defaults to `base,ethereum`.
 - `limit`: optional transaction result cap from 1 to 100. Defaults to `50`.
-- `days`: optional requested transaction lookback intent from 1 to 365. Defaults to `30`.
+- `days`: optional transaction timestamp lookback from 1 to 365 days. Defaults to `30`.
 - `category`: optional `all`, `external`, `internal`, `erc20`, `erc721`, or `erc1155`.
 
 Example:
@@ -192,7 +209,8 @@ Expected paid response shape:
 - Missing or invalid `address`: HTTP `400`
 - Unsupported `chains`: HTTP `400`
 - Missing payment on `/portfolio` or `/tx-history`: HTTP `402`
-- Provider or server failure: HTTP `500`
+- Provider failure: HTTP `502`
+- Internal server failure: HTTP `500`
 
 ## Test Queries
 

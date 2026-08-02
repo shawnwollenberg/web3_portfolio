@@ -16,10 +16,37 @@ Use this skill when an agent needs EVM wallet intelligence, a normalized portfol
 - Discovery: `GET /.well-known/x402.json` or `GET /.well-known/x402`
 - OpenAPI: `GET /openapi.json`
 - Examples: `GET /examples?format=json`
-- Local MCP server: `npm run mcp`
+- Published MCP package: `@shawnwollenberg/walletlens-mcp@0.1.0`
+- MCP install/run: `npx --yes @shawnwollenberg/walletlens-mcp@0.1.0`
 - Payment protocol: x402
 - Payment network: Base mainnet, `eip155:8453`
 - Price: `$0.02` USDC per paid call
+
+## MCP Setup
+
+Run the published stdio server from an MCP-compatible client:
+
+```json
+{
+  "mcpServers": {
+    "walletlens": {
+      "command": "npx",
+      "args": ["--yes", "@shawnwollenberg/walletlens-mcp@0.1.0"],
+      "env": {
+        "WALLETLENS_X402_PRIVATE_KEY": "0xYOUR_DEDICATED_AGENT_PRIVATE_KEY",
+        "WALLETLENS_MAX_PAYMENT_USDC": "0.02",
+        "WALLETLENS_EXPECTED_PAY_TO": "0xA7c82E9775A9594c673E3Fde8a42D3D17dE2B957"
+      }
+    }
+  }
+}
+```
+
+The three free MCP tools work without a private key. Paid tools sign locally
+with the configured dedicated agent wallet and make at most one payment attempt
+per invocation. The package rejects non-exact schemes, non-Base networks,
+non-USDC assets, unexpected resources or recipients, and amounts above the
+configured limit.
 
 ## When To Use
 
@@ -183,7 +210,8 @@ Transaction objects contain:
 
 - HTTP `400`: invalid address or unsupported chain
 - HTTP `402`: payment required
-- HTTP `500`: provider or server error
+- HTTP `500`: internal server error
+- HTTP `502`: upstream provider error
 
 For HTTP `402`, do not treat the response as a hard failure. It is the expected x402 payment negotiation step.
 

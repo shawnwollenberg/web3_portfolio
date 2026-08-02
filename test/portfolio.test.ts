@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { formatTokenAmount } from "../src/portfolio.js";
+import { formatTokenAmount, multiplyDecimalStrings } from "../src/portfolio.js";
 
 describe("formatTokenAmount", () => {
   it("formats integer token balances with decimals", () => {
@@ -10,5 +10,21 @@ describe("formatTokenAmount", () => {
 
   it("preserves non-integer provider values", () => {
     assert.equal(formatTokenAmount("1.5", 6), "1.5");
+  });
+
+  it("does not allocate from invalid token decimals", () => {
+    assert.equal(formatTokenAmount("100", 1000), "100");
+  });
+});
+
+describe("multiplyDecimalStrings", () => {
+  it("multiplies without losing precision to JavaScript numbers", () => {
+    assert.equal(multiplyDecimalStrings("9007199254740993", "1.25"), "11258999068426241.25");
+    assert.equal(multiplyDecimalStrings("0.000001", "0.25"), "0");
+  });
+
+  it("rounds to six fractional digits and supports scientific notation", () => {
+    assert.equal(multiplyDecimalStrings("1", "1.2345678"), "1.234568");
+    assert.equal(multiplyDecimalStrings("100000000", "1e-8"), "1");
   });
 });
