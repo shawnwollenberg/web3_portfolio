@@ -73,6 +73,40 @@ function extractJson(message: string): string {
 }
 
 function findLogGroup(profile: string, region: string, stackName: string): string {
+  const stackOutput = execFileSync(
+    "aws",
+    [
+      "cloudformation",
+      "list-stack-resources",
+      "--profile",
+      profile,
+      "--region",
+      region,
+      "--stack-name",
+      stackName,
+      "--output",
+      "json"
+    ],
+    { encoding: "utf8" }
+  );
+
+  const stack = JSON.parse(stackOutput) as {
+    StackResourceSummaries?: Array<{
+      LogicalResourceId?: string;
+      PhysicalResourceId?: string;
+      ResourceType?: string;
+    }>;
+  };
+  const managedLogGroup = stack.StackResourceSummaries?.find(
+    resource =>
+      resource.ResourceType === "AWS::Logs::LogGroup" &&
+      resource.LogicalResourceId?.startsWith("PortfolioApiLogGroup") &&
+      resource.PhysicalResourceId
+  );
+  if (managedLogGroup?.PhysicalResourceId) return managedLogGroup.PhysicalResourceId;
+
+  // Backward-compatible fallback for stacks deployed before the retained log
+  // group became an explicit CloudFormation resource.
   const output = execFileSync(
     "aws",
     [

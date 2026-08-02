@@ -66,7 +66,7 @@ console.log(
       nextStep:
         merchantMatches > 0 && searchMatches > 0
           ? "WalletLens is discoverable in the CDP Bazaar."
-          : "Complete a successful paid settlement for each WalletLens resource through the CDP facilitator, then rerun this check."
+          : "No WalletLens match is indexed yet. After a successful CDP-facilitated settlement, indexing may be asynchronous; retry later and ensure each paid resource has settled at least once."
     },
     null,
     2
