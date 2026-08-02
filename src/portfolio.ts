@@ -116,18 +116,28 @@ export async function getPortfolioSnapshot(address: string, chainInput?: string)
     networks: chains.map(chain => chain.alchemyNetwork)
   };
 
-  const [tokenResponse, txResponse] = await Promise.all([
-    alchemy.portfolio.getTokensByWallet([portfolioAddress], true, true, true),
-    alchemy.portfolio.getTransactionsByWallet([portfolioAddress], undefined, undefined, 10).catch(() => ({
-      transactions: []
-    }))
+  const [tokenResponse, activityResult] = await Promise.all([
+    providerCall(
+      alchemy.portfolio.getTokensByWallet([portfolioAddress], true, true, true),
+      "Alchemy portfolio token request"
+    ),
+    providerCall(
+      alchemy.portfolio.getTransactionsByWallet([portfolioAddress], undefined, undefined, 10),
+      "Alchemy recent activity request"
+    )
+      .then(response => ({ response, warning: null }))
+      .catch(error => ({
+        response: { transactions: [] },
+        warning: error instanceof Error ? `${error.message}; recentActivity is incomplete.` : "Recent activity is incomplete."
+      }))
   ]);
 
   const tokens = tokenResponse.data.tokens
     .map(token => normalizeToken(token as ProviderToken))
     .filter(token => token.rawBalance !== "0");
-  const recentActivity = (txResponse.transactions as ProviderTransaction[]).map(normalizeTransaction);
+  const recentActivity = (activityResult.response.transactions as ProviderTransaction[]).map(normalizeTransaction);
   const summary = buildPortfolioSummary(tokens);
+  if (activityResult.warning) summary.warnings.push(activityResult.warning);
 
   return {
     address: parsedAddress.data,
@@ -139,6 +149,23 @@ export async function getPortfolioSnapshot(address: string, chainInput?: string)
     recentActivity,
     provider: "alchemy"
   };
+}
+
+async function providerCall<T>(request: Promise<T>, label: string): Promise<T> {
+  let timeout: NodeJS.Timeout | undefined;
+  const timeoutPromise = new Promise<never>((_resolve, reject) => {
+    timeout = setTimeout(() => reject(new Error(`${label} timed out after ${config.providerTimeoutMs}ms`)), config.providerTimeoutMs);
+  });
+
+  try {
+    return await Promise.race([request, timeoutPromise]);
+  } catch (cause) {
+    const error = new Error(`${label} failed: ${cause instanceof Error ? cause.message : String(cause)}`);
+    error.name = "ProviderError";
+    throw error;
+  } finally {
+    if (timeout) clearTimeout(timeout);
+  }
 }
 
 function normalizeToken(token: ProviderToken): PortfolioToken {
@@ -198,7 +225,8 @@ function normalizeRawBalance(value: unknown): string {
 
 export function formatTokenAmount(raw: string, decimals: number): string {
   if (!/^\d+$/.test(raw)) return raw;
-  if (decimals <= 0) return raw;
+  if (!Number.isInteger(decimals) || decimals <= 0) return raw;
+  if (decimals > 255) return raw;
 
   const padded = raw.padStart(decimals + 1, "0");
   const integer = padded.slice(0, -decimals);
@@ -207,37 +235,72 @@ export function formatTokenAmount(raw: string, decimals: number): string {
   return fraction ? `${integer}.${fraction}` : integer;
 }
 
-function multiplyDecimalStrings(left: string, right: string): string | null {
-  const leftNumber = Number(left);
-  const rightNumber = Number(right);
-  if (!Number.isFinite(leftNumber) || !Number.isFinite(rightNumber)) return null;
-  return (leftNumber * rightNumber).toFixed(6).replace(/\.?0+$/, "");
+export function multiplyDecimalStrings(left: string, right: string, maxFractionDigits = 6): string | null {
+  const leftDecimal = parseDecimal(left);
+  const rightDecimal = parseDecimal(right);
+  if (!leftDecimal || !rightDecimal || maxFractionDigits < 0 || !Number.isInteger(maxFractionDigits)) return null;
+
+  let unscaled = leftDecimal.unscaled * rightDecimal.unscaled;
+  let scale = leftDecimal.scale + rightDecimal.scale;
+
+  if (scale > maxFractionDigits) {
+    const divisor = 10n ** BigInt(scale - maxFractionDigits);
+    const remainder = unscaled % divisor;
+    unscaled /= divisor;
+    if (remainder * 2n >= divisor) unscaled += 1n;
+    scale = maxFractionDigits;
+  }
+
+  if (scale === 0) return unscaled.toString();
+  const padded = unscaled.toString().padStart(scale + 1, "0");
+  const integer = padded.slice(0, -scale);
+  const fraction = padded.slice(-scale).replace(/0+$/, "");
+  return fraction ? `${integer}.${fraction}` : integer;
+}
+
+function parseDecimal(value: string): { unscaled: bigint; scale: number } | null {
+  const match = value.trim().match(/^(\d+)(?:\.(\d+))?(?:[eE]([+-]?\d+))?$/);
+  if (!match) return null;
+
+  const fraction = match[2] ?? "";
+  const exponent = Number(match[3] ?? "0");
+  if (!Number.isSafeInteger(exponent) || Math.abs(exponent) > 1000) return null;
+
+  let digits = `${match[1]}${fraction}`.replace(/^0+(?=\d)/, "");
+  let scale = fraction.length - exponent;
+  if (scale < 0) {
+    digits += "0".repeat(-scale);
+    scale = 0;
+  }
+  if (scale > 1000) return null;
+
+  return { unscaled: BigInt(digits || "0"), scale };
 }
 
 function buildPortfolioSummary(tokens: PortfolioToken[]): PortfolioSummary {
   const pricedTokens = tokens.filter(token => token.valueUsd !== null);
   const unpricedTokenCount = tokens.length - pricedTokens.length;
-  const chainMap = new Map<string, { tokenCount: number; pricedTokenCount: number; totalValue: number }>();
-  let totalValue = 0;
-  let stablecoinValue = 0;
+  const chainMap = new Map<string, { tokenCount: number; pricedTokenCount: number; totalValueMicros: bigint }>();
+  let totalValueMicros = 0n;
+  let stablecoinValueMicros = 0n;
 
   for (const token of tokens) {
     const chainSummary = chainMap.get(token.chain) ?? {
       tokenCount: 0,
       pricedTokenCount: 0,
-      totalValue: 0
+      totalValueMicros: 0n
     };
 
     chainSummary.tokenCount += 1;
 
-    const value = parseUsdValue(token.valueUsd);
-    if (value !== null) {
-      totalValue += value;
+    const valueMicros = decimalToScaledInteger(token.valueUsd, 6);
+    if (valueMicros !== null) {
+      totalValueMicros += valueMicros;
       chainSummary.pricedTokenCount += 1;
-      chainSummary.totalValue += value;
+      chainSummary.totalValueMicros += valueMicros;
 
       if (isStablecoin(token.symbol)) {
-        stablecoinValue += value;
+        stablecoinValueMicros += valueMicros;
       }
     }
 
@@ -248,22 +311,25 @@ function buildPortfolioSummary(tokens: PortfolioToken[]): PortfolioSummary {
   if (unpricedTokenCount > 0) {
     warnings.push(`${unpricedTokenCount} token${unpricedTokenCount === 1 ? " is" : "s are"} missing USD prices`);
   }
+  if (stablecoinValueMicros > 0n) {
+    warnings.push("Stablecoin totals are symbol-based and may include unverified token contracts.");
+  }
 
   return {
-    totalValueUsd: pricedTokens.length > 0 ? formatUsd(totalValue) : null,
+    totalValueUsd: pricedTokens.length > 0 ? formatUsd(totalValueMicros) : null,
     pricedTokenCount: pricedTokens.length,
     unpricedTokenCount,
     tokenCount: tokens.length,
-    stablecoinValueUsd: stablecoinValue > 0 ? formatUsd(stablecoinValue) : null,
+    stablecoinValueUsd: stablecoinValueMicros > 0n ? formatUsd(stablecoinValueMicros) : null,
     chains: [...chainMap.entries()]
+      .sort((left, right) => compareBigInts(right[1].totalValueMicros, left[1].totalValueMicros))
       .map(([chain, summary]) => ({
         chain,
         tokenCount: summary.tokenCount,
         pricedTokenCount: summary.pricedTokenCount,
         unpricedTokenCount: summary.tokenCount - summary.pricedTokenCount,
-        totalValueUsd: summary.pricedTokenCount > 0 ? formatUsd(summary.totalValue) : null
-      }))
-      .sort((left, right) => Number(right.totalValueUsd ?? 0) - Number(left.totalValueUsd ?? 0)),
+        totalValueUsd: summary.pricedTokenCount > 0 ? formatUsd(summary.totalValueMicros) : null
+      })),
     topHoldings: pricedTokens
       .map(token => ({
         chain: token.chain,
@@ -272,20 +338,39 @@ function buildPortfolioSummary(tokens: PortfolioToken[]): PortfolioSummary {
         name: token.name,
         valueUsd: token.valueUsd!
       }))
-      .sort((left, right) => Number(right.valueUsd) - Number(left.valueUsd))
+      .sort((left, right) =>
+        compareBigInts(
+          decimalToScaledInteger(right.valueUsd, 6) ?? 0n,
+          decimalToScaledInteger(left.valueUsd, 6) ?? 0n
+        )
+      )
       .slice(0, 10),
     warnings
   };
 }
 
-function parseUsdValue(value: string | null): number | null {
+function decimalToScaledInteger(value: string | null, targetScale: number): bigint | null {
   if (value === null) return null;
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : null;
+  const parsed = parseDecimal(value);
+  if (!parsed) return null;
+  if (parsed.scale === targetScale) return parsed.unscaled;
+  if (parsed.scale < targetScale) return parsed.unscaled * 10n ** BigInt(targetScale - parsed.scale);
+
+  const divisor = 10n ** BigInt(parsed.scale - targetScale);
+  const quotient = parsed.unscaled / divisor;
+  return (parsed.unscaled % divisor) * 2n >= divisor ? quotient + 1n : quotient;
 }
 
-function formatUsd(value: number): string {
-  return value.toFixed(2).replace(/\.?0+$/, "");
+function formatUsd(valueMicros: bigint): string {
+  const cents = (valueMicros + 5_000n) / 10_000n;
+  const padded = cents.toString().padStart(3, "0");
+  const integer = padded.slice(0, -2);
+  const fraction = padded.slice(-2).replace(/0+$/, "");
+  return fraction ? `${integer}.${fraction}` : integer;
+}
+
+function compareBigInts(left: bigint, right: bigint) {
+  return left === right ? 0 : left > right ? 1 : -1;
 }
 
 function isStablecoin(symbol: string | null): boolean {

@@ -5,6 +5,7 @@ import * as cloudfront from "aws-cdk-lib/aws-cloudfront";
 import * as origins from "aws-cdk-lib/aws-cloudfront-origins";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
+import * as logs from "aws-cdk-lib/aws-logs";
 import * as route53 from "aws-cdk-lib/aws-route53";
 import * as targets from "aws-cdk-lib/aws-route53-targets";
 import { Construct } from "constructs";
@@ -28,15 +29,21 @@ export class Web3PortfolioStack extends cdk.Stack {
       throw new Error("MY_WALLET_ADDRESS must be set in .env before deploying");
     }
 
+    const apiLogGroup = new logs.LogGroup(this, "PortfolioApiLogGroup", {
+      retention: logs.RetentionDays.ONE_MONTH,
+      removalPolicy: cdk.RemovalPolicy.RETAIN
+    });
+
     const api = new NodejsFunction(this, "PortfolioApiFunction", {
       entry: "src/lambda.ts",
       handler: "handler",
-      runtime: lambda.Runtime.NODEJS_20_X,
+      runtime: lambda.Runtime.NODEJS_24_X,
       timeout: Duration.seconds(30),
       memorySize: 512,
+      logGroup: apiLogGroup,
       bundling: {
         format: cdk.aws_lambda_nodejs.OutputFormat.CJS,
-        target: "node20",
+        target: "node24",
         mainFields: ["module", "main"],
         sourceMap: true,
         commandHooks: {
@@ -61,7 +68,8 @@ export class Web3PortfolioStack extends cdk.Stack {
           process.env.PREVIEW_WALLET_ADDRESS || "0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea",
         PREVIEW_WALLET_CHAINS: process.env.PREVIEW_WALLET_CHAINS || "base",
         PREVIEW_CACHE_TTL_SECONDS: process.env.PREVIEW_CACHE_TTL_SECONDS || "600",
-        ANALYTICS_IP_SALT: process.env.ANALYTICS_IP_SALT || "walletlens-v1",
+        PROVIDER_TIMEOUT_MS: process.env.PROVIDER_TIMEOUT_MS || "10000",
+        ...(process.env.ANALYTICS_IP_SALT ? { ANALYTICS_IP_SALT: process.env.ANALYTICS_IP_SALT } : {}),
         ...(cdpApiKeyId ? { CDP_API_KEY_ID: cdpApiKeyId } : {}),
         ...(cdpApiKeySecret ? { CDP_API_KEY_SECRET: cdpApiKeySecret } : {})
       }

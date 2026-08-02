@@ -151,6 +151,7 @@ export async function getTxHistorySnapshot(
   );
 
   const transactions = dedupeTransfers(chainResults)
+    .filter(({ transfer }) => isTimestampWithinLookback(transfer.metadata?.blockTimestamp, days))
     .map(({ chain, transfer }) => enrichTransaction(parsedAddress.data, chain, transfer))
     .sort(compareTransactionsNewestFirst)
     .slice(0, limit);
@@ -164,7 +165,7 @@ export async function getTxHistorySnapshot(
       days,
       category
     },
-    summary: buildSummary(transactions, chains, days),
+    summary: buildSummary(transactions, chains),
     transactions,
     pagination: {
       pageKeys: chainResults.flatMap(result =>
@@ -180,7 +181,7 @@ export async function getTxHistorySnapshot(
       )
     },
     provider: "alchemy",
-    note: "Enriched and normalized by WalletLens TxLens. Date range is reported as intent; current Alchemy transfer fetch uses newest available transfers per chain."
+    note: `Enriched and normalized by WalletLens TxLens. Results are limited to the newest available transfers within the requested ${days}-day lookback.`
   };
 }
 
@@ -209,18 +210,28 @@ async function getTransfersForChain(
 }
 
 async function getAssetTransfers(chain: SupportedChain, params: Record<string, unknown>) {
-  const response = await fetch(`https://${chain.alchemyNetwork}.g.alchemy.com/v2/${config.alchemyApiKey}`, {
-    method: "POST",
-    headers: {
-      "content-type": "application/json"
-    },
-    body: JSON.stringify({
-      jsonrpc: "2.0",
-      id: 1,
-      method: "alchemy_getAssetTransfers",
-      params: [params]
-    })
-  });
+  let response: Response;
+  try {
+    response = await fetch(`https://${chain.alchemyNetwork}.g.alchemy.com/v2/${config.alchemyApiKey}`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "alchemy_getAssetTransfers",
+        params: [params]
+      }),
+      signal: AbortSignal.timeout(config.providerTimeoutMs)
+    });
+  } catch (cause) {
+    const error = new Error(
+      `Alchemy transfer request failed: ${cause instanceof Error ? cause.message : String(cause)}`
+    );
+    error.name = "ProviderError";
+    throw error;
+  }
 
   const responseText = await response.text();
   const body = parseAssetTransfersResponse(responseText);
@@ -371,7 +382,7 @@ function buildRiskFlags(tx: AssetTransfersWithMetadataResult): string[] {
   return flags;
 }
 
-function buildSummary(transactions: EnrichedTransaction[], chains: SupportedChain[], days: number): TxHistorySummary {
+function buildSummary(transactions: EnrichedTransaction[], chains: SupportedChain[]): TxHistorySummary {
   const directionCounts = {
     in: 0,
     out: 0,
@@ -389,10 +400,7 @@ function buildSummary(transactions: EnrichedTransaction[], chains: SupportedChai
     chainCounts.set(transaction.chain, (chainCounts.get(transaction.chain) ?? 0) + 1);
   }
 
-  const warnings = [
-    "USD values are currently null for transaction history.",
-    `days=${days} is accepted for agent intent but not yet converted to block ranges.`
-  ];
+  const warnings = ["USD values are currently null for transaction history."];
 
   return {
     transactionCount: transactions.length,
@@ -408,6 +416,13 @@ function buildSummary(transactions: EnrichedTransaction[], chains: SupportedChai
       .slice(0, 10),
     warnings
   };
+}
+
+export function isTimestampWithinLookback(timestamp: string | null | undefined, days: number, now = Date.now()) {
+  if (!timestamp) return false;
+  const timestampMs = Date.parse(timestamp);
+  if (!Number.isFinite(timestampMs)) return false;
+  return timestampMs >= now - days * 24 * 60 * 60 * 1000;
 }
 
 function compareTransactionsNewestFirst(left: EnrichedTransaction, right: EnrichedTransaction) {

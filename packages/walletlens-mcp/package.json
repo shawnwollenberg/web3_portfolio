@@ -1,0 +1,65 @@
+{
+  "name": "@shawnwollenberg/walletlens-mcp",
+  "version": "0.1.0",
+  "description": "MCP server for WalletLens EVM wallet intelligence and x402-paid reports.",
+  "type": "module",
+  "main": "dist/walletlens-mcp.js",
+  "bin": {
+    "walletlens-mcp": "dist/walletlens-mcp.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc --noEmit -p tsconfig.json",
+    "test": "node --import tsx --test test/*.test.ts",
+    "start": "node dist/walletlens-mcp.js",
+    "prepack": "npm run check && npm test && npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shawnwollenberg/web3_portfolio.git",
+    "directory": "packages/walletlens-mcp"
+  },
+  "homepage": "https://walletlens.wallyweb.com",
+  "bugs": {
+    "url": "https://github.com/shawnwollenberg/web3_portfolio/issues"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "x402",
+    "web3",
+    "wallet",
+    "base",
+    "usdc",
+    "agents"
+  ],
+  "author": "Shawn Wollenberg",
+  "license": "ISC",
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "@x402/core": "^2.20.0",
+    "@x402/evm": "^2.20.0",
+    "viem": "^2.55.10",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^25.8.0",
+    "tsx": "^4.23.3",
+    "typescript": "^6.0.3"
+  },
+  "overrides": {
+    "ws@^8.0.0": "^8.21.1"
+  }
+}

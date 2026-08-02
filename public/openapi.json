@@ -432,7 +432,10 @@
             }
           },
           "500": {
-            "description": "Server or provider error"
+            "description": "Internal server error"
+          },
+          "502": {
+            "description": "Upstream provider error"
           }
         }
       }
@@ -440,7 +443,7 @@
     "/tx-history": {
       "get": {
         "summary": "Get enriched wallet transaction history",
-        "description": "Requires x402 payment. Use this endpoint when the user asks for recent wallet activity, transaction history, USDC transfers, decoded transfer rows, counterparties, or Base transfer history. Returns normalized multi-chain transfer history with direction, categorization, decoded summaries, labels, and basic insights. If you do not have an address yet, call /ask or /analyze first.",
+        "description": "Requires x402 payment. Use this endpoint when the user asks for recent wallet activity, transaction history, USDC transfers, normalized transfer rows, counterparties, or Base transfer history. Returns normalized multi-chain transfer history with direction, categorization, transfer summaries, labels, and data-quality flags. If you do not have an address yet, call /ask or /analyze first.",
         "parameters": [
           {
             "name": "address",
@@ -523,7 +526,10 @@
             }
           },
           "500": {
-            "description": "Server or provider error"
+            "description": "Internal server error"
+          },
+          "502": {
+            "description": "Upstream provider error"
           }
         }
       }
@@ -531,7 +537,7 @@
     "/wallet-report": {
       "get": {
         "summary": "Get a bundled wallet report",
-        "description": "Requires x402 payment. Use this endpoint for broad user intents such as analyze this wallet, summarize this Base wallet, explain this onchain wallet activity, get portfolio and transaction history, show top holdings and counterparties, or inspect recent USDC transfers. Returns normalized EVM portfolio balances plus TxLens transaction history, top holdings, counterparties, decoded transfers, and wallet activity summary in one agent-friendly response. If unsure which paid endpoint to choose, use /wallet-report.",
+        "description": "Requires x402 payment. Use this endpoint for broad user intents such as analyze this wallet, summarize this Base wallet, explain this onchain wallet activity, get portfolio and transaction history, show top holdings and counterparties, or inspect recent USDC transfers. Returns normalized EVM portfolio balances plus TxLens transaction history, top holdings, counterparties, transfer summaries, and wallet activity statistics in one agent-friendly response. If unsure which paid endpoint to choose, use /wallet-report.",
         "parameters": [
           {
             "name": "address",
@@ -614,7 +620,10 @@
             }
           },
           "500": {
-            "description": "Server or provider error"
+            "description": "Internal server error"
+          },
+          "502": {
+            "description": "Upstream provider error"
           }
         }
       }
@@ -699,6 +708,21 @@
             "type": "array",
             "items": { "type": "string" }
           },
+          "mcp": {
+            "type": "object",
+            "properties": {
+              "transport": { "type": "string" },
+              "package": { "type": "string" },
+              "registry": { "type": "string", "format": "uri" },
+              "run": { "type": "string" },
+              "freeTools": { "type": "array", "items": { "type": "string" } },
+              "paidTools": { "type": "array", "items": { "type": "string" } },
+              "defaultMaxPaymentUsdc": { "type": "string" },
+              "network": { "type": "string" },
+              "asset": { "type": "string" }
+            },
+            "required": ["transport", "package", "registry", "run", "freeTools", "paidTools", "defaultMaxPaymentUsdc", "network", "asset"]
+          },
           "docs": {
             "type": "object",
             "properties": {
@@ -706,12 +730,13 @@
               "llms": { "type": "string" },
               "llmsFull": { "type": "string" },
               "skill": { "type": "string" },
+              "mcpPackage": { "type": "string", "format": "uri" },
               "x402": { "type": "string" }
             },
-            "required": ["openapi", "llms", "llmsFull", "skill", "x402"]
+            "required": ["openapi", "llms", "llmsFull", "skill", "mcpPackage", "x402"]
           }
         },
-        "required": ["ok", "name", "version", "timestamp", "uptimeSeconds", "baseUrl", "x402DevBypass", "paidResources", "freeResources", "supportedChains", "docs"]
+        "required": ["ok", "name", "version", "timestamp", "uptimeSeconds", "baseUrl", "x402DevBypass", "paidResources", "freeResources", "supportedChains", "mcp", "docs"]
       },
       "Preview": {
         "type": "object",

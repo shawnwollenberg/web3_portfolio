@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "description": "WalletLens: paid x402 API for EVM wallet reports, portfolio snapshots, and transaction history.",
   "type": "module",
-  "main": "dist/server.js",
+  "main": "dist/src/server.js",
   "scripts": {
     "dev": "tsx watch --env-file=.env src/server.ts",
-    "start": "node dist/server.js",
+    "start": "node dist/src/server.js",
     "build": "tsc -p tsconfig.json",
     "check": "tsc --noEmit -p tsconfig.json",
     "test": "node --import tsx --test test/*.test.ts",
@@ -14,7 +14,8 @@
     "test:x402:smart": "node --env-file=.env --import tsx scripts/test-x402-smart-account.ts",
     "test:aegis-relay": "node --env-file=.env --import tsx scripts/test-aegis-relay-smoke.ts",
     "analytics:recent": "node --env-file=.env --import tsx scripts/analytics-recent.ts",
-    "mcp": "node --env-file=.env --import tsx mcp/walletlens-mcp.ts",
+    "check:discovery": "node --env-file=.env --import tsx scripts/check-agent-discovery.ts",
+    "mcp": "node --env-file=.env --import tsx packages/walletlens-mcp/src/walletlens-mcp.ts",
     "cdk": "cdk",
     "deploy:aws": "cdk deploy --profile wallyweb",
     "destroy:aws": "cdk destroy --profile wallyweb"
@@ -23,27 +24,30 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@coinbase/cdp-sdk": "^1.49.2",
-    "@modelcontextprotocol/sdk": "^1.29.0",
-    "@x402/core": "^2.12.0",
-    "@x402/evm": "^2.12.0",
-    "@x402/express": "^2.12.0",
+    "@coinbase/cdp-sdk": "^1.54.0",
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "@x402/core": "^2.20.0",
+    "@x402/evm": "^2.20.0",
+    "@x402/express": "^2.20.0",
     "alchemy-sdk": "^3.6.5",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "serverless-http": "^4.0.0",
-    "viem": "^2.49.3",
+    "viem": "^2.55.10",
     "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/express": "^5.0.6",
     "@types/node": "^25.8.0",
-    "aws-cdk": "^2.1122.0",
-    "aws-cdk-lib": "^2.254.0",
-    "constructs": "^10.6.0",
-    "esbuild": "^0.28.0",
-    "tsx": "^4.22.1",
+    "aws-cdk": "^2.1134.0",
+    "aws-cdk-lib": "^2.263.0",
+    "constructs": "^10.8.0",
+    "esbuild": "^0.28.1",
+    "tsx": "^4.23.3",
     "typescript": "^6.0.3",
     "vitest": "^4.1.6"
+  },
+  "overrides": {
+    "ws@^8.0.0": "^8.21.1"
   }
 }
