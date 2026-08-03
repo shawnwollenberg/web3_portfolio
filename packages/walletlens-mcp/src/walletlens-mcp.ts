@@ -15,7 +15,7 @@ import {
 type HexPrivateKey = `0x${string}`;
 type PaidEndpoint = "/portfolio" | "/tx-history" | "/wallet-report";
 
-const PACKAGE_VERSION = "0.1.0";
+const PACKAGE_VERSION = "0.1.1";
 const DEFAULT_BASE_URL = "https://walletlens.wallyweb.com";
 const DEFAULT_PAY_TO = "0xA7c82E9775A9594c673E3Fde8a42D3D17dE2B957";
 
@@ -60,7 +60,7 @@ server.registerTool(
   async () =>
     jsonToolResult({
       defaultChains: ["base", "ethereum"],
-      supportedChains: ["base", "ethereum", "eth", "optimism", "arbitrum", "polygon"],
+      supportedChains: ["base", "ethereum", "eth", "optimism", "arbitrum", "polygon", "robinhood"],
       solanaSupported: false
     })
 );
@@ -81,7 +81,7 @@ server.registerTool(
   "get_portfolio",
   {
     description:
-      "Fetch a paid WalletLens portfolio snapshot via x402. Requires WALLETLENS_X402_PRIVATE_KEY in the MCP server environment.",
+      "Fetch a paid WalletLens portfolio snapshot, including canonical Robinhood Stock Tokens when chains=robinhood. Requires WALLETLENS_X402_PRIVATE_KEY.",
     inputSchema: {
       address: z.string().regex(/^0x[a-fA-F0-9]{40}$/).describe("EVM wallet address."),
       chains: z.string().default("base,ethereum").describe("Comma-separated supported chain slugs.")
@@ -121,7 +121,7 @@ server.registerTool(
   "get_wallet_report",
   {
     description:
-      "Fetch a paid WalletLens bundled report with portfolio balances and transaction history via x402. Requires WALLETLENS_X402_PRIVATE_KEY.",
+      "Fetch a paid WalletLens report with portfolio balances, transaction history, and Robinhood Stock Token intelligence. Requires WALLETLENS_X402_PRIVATE_KEY.",
     inputSchema: txHistoryInputSchema
   },
   async ({ address, chains, limit, days, category }) => {

@@ -30,13 +30,13 @@ export const paymentRouteConfig = {
     },
     resource: `${config.publicBaseUrl}/portfolio`,
     description:
-      "WalletLens EVM wallet portfolio API for token balances, native ETH, USD values, stablecoin totals, top holdings, Base wallet lookup, Ethereum wallet summary, and agent wallet intelligence.",
+      "WalletLens EVM portfolio API for token balances, native ETH, USD values, stablecoins, top holdings, and canonical Robinhood Stock Tokens with multiplier-adjusted prices and trading-halt status.",
     mimeType: "application/json",
     extensions: {
       ...declareDiscoveryExtension({
         input: {
-          address: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
-          chains: "base,ethereum"
+          address: "0xfac1d7dC76bE90C5Cadd5B022af7838dd8190F16",
+          chains: "robinhood"
         },
         inputSchema: portfolioInputSchema,
         output: {
@@ -56,7 +56,7 @@ export const paymentRouteConfig = {
     },
     resource: `${config.publicBaseUrl}/tx-history`,
     description:
-      "TxLens EVM transaction history API for Base and Ethereum wallets, USDC transfers, normalized transfer summaries, counterparties, direction, categorization, labels, data-quality flags, and wallet activity summaries.",
+      "TxLens multi-chain EVM transaction history API for Base, Ethereum, and Robinhood Chain transfers with normalized summaries, counterparties, direction, categorization, labels, and data-quality flags.",
     mimeType: "application/json",
     extensions: {
       ...declareDiscoveryExtension({
@@ -85,7 +85,7 @@ export const paymentRouteConfig = {
     },
     resource: `${config.publicBaseUrl}/wallet-report`,
     description:
-      "WalletLens wallet report API for agents: one paid x402 call returns EVM portfolio balances plus TxLens transaction history, Base USDC activity, top holdings, counterparties, normalized transfer summaries, and wallet activity statistics.",
+      "WalletLens report API for agents: one x402 call returns EVM portfolio balances plus TxLens history, canonical Robinhood Stock Tokens, multiplier-adjusted USD values, halt status, top holdings, and counterparties.",
     mimeType: "application/json",
     extensions: {
       ...declareDiscoveryExtension({

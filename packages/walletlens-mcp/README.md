@@ -1,6 +1,6 @@
 # WalletLens MCP
 
-WalletLens MCP gives MCP-compatible agents access to free service discovery and paid EVM wallet intelligence through the x402 payment protocol.
+WalletLens MCP gives MCP-compatible agents access to free service discovery and paid EVM wallet intelligence, including Robinhood Stock Token reports, through x402.
 
 The server runs locally over stdio. Paid requests are signed locally with a dedicated agent wallet; WalletLens never receives the private key.
 
@@ -30,7 +30,7 @@ Add the following to your MCP client configuration. Replace the private key with
   "mcpServers": {
     "walletlens": {
       "command": "npx",
-      "args": ["--yes", "@shawnwollenberg/walletlens-mcp@0.1.0"],
+      "args": ["--yes", "@shawnwollenberg/walletlens-mcp@0.1.1"],
       "env": {
         "WALLETLENS_X402_PRIVATE_KEY": "0xYOUR_DEDICATED_AGENT_PRIVATE_KEY",
         "WALLETLENS_MAX_PAYMENT_USDC": "0.02",
@@ -69,7 +69,7 @@ If a challenge violates the policy, the server refuses to sign it.
 ## Run directly
 
 ```bash
-npx --yes @shawnwollenberg/walletlens-mcp@0.1.0
+npx --yes @shawnwollenberg/walletlens-mcp@0.1.1
 ```
 
 The process communicates over MCP stdio and normally prints no human-readable output. Use `--help` or `--version` for CLI information.

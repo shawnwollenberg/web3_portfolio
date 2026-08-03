@@ -16,8 +16,8 @@ Use this skill when an agent needs EVM wallet intelligence, a normalized portfol
 - Discovery: `GET /.well-known/x402.json` or `GET /.well-known/x402`
 - OpenAPI: `GET /openapi.json`
 - Examples: `GET /examples?format=json`
-- Published MCP package: `@shawnwollenberg/walletlens-mcp@0.1.0`
-- MCP install/run: `npx --yes @shawnwollenberg/walletlens-mcp@0.1.0`
+- Published MCP package: `@shawnwollenberg/walletlens-mcp@0.1.1`
+- MCP install/run: `npx --yes @shawnwollenberg/walletlens-mcp@0.1.1`
 - Payment protocol: x402
 - Payment network: Base mainnet, `eip155:8453`
 - Price: `$0.02` USDC per paid call
@@ -31,7 +31,7 @@ Run the published stdio server from an MCP-compatible client:
   "mcpServers": {
     "walletlens": {
       "command": "npx",
-      "args": ["--yes", "@shawnwollenberg/walletlens-mcp@0.1.0"],
+      "args": ["--yes", "@shawnwollenberg/walletlens-mcp@0.1.1"],
       "env": {
         "WALLETLENS_X402_PRIVATE_KEY": "0xYOUR_DEDICATED_AGENT_PRIVATE_KEY",
         "WALLETLENS_MAX_PAYMENT_USDC": "0.02",
@@ -107,6 +107,9 @@ Supported chains:
 - `optimism`
 - `arbitrum`
 - `polygon`
+- `robinhood` (aliases: `robinhood-chain`, `rh`)
+
+For `chains=robinhood`, portfolio and wallet-report responses identify canonical Robinhood Stock Tokens, include Robinhood bid/ask and corporate-action multiplier metadata, calculate a multiplier-adjusted midpoint USD value, and surface trading halts. Internal transfer traces are unavailable, but external and token transfers are returned through TxLens. Payment remains $0.02 Base USDC.
 
 ## x402 Flow
 
@@ -128,6 +131,7 @@ curl https://walletlens.wallyweb.com/examples/wallet-report
 curl -i "https://walletlens.wallyweb.com/portfolio?address=0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045&chains=base,ethereum"
 curl -i "https://walletlens.wallyweb.com/tx-history?address=0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea&chains=base&limit=20"
 curl -i "https://walletlens.wallyweb.com/wallet-report?address=0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea&chains=base&limit=20"
+curl -i "https://walletlens.wallyweb.com/wallet-report?address=0xfac1d7dC76bE90C5Cadd5B022af7838dd8190F16&chains=robinhood&limit=20"
 ```
 
 ## Response Shape

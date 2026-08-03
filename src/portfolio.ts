@@ -1,7 +1,17 @@
-import { Alchemy, type TokenPrice } from "alchemy-sdk";
 import { z } from "zod";
+import {
+  getAlchemyPortfolioTokens,
+  getAlchemyPortfolioTransactions,
+  type TokenPrice
+} from "./alchemy.js";
 import { config } from "./config.js";
 import { networkToChain, parseChains } from "./chains.js";
+import {
+  getRobinhoodStockTokenMarketData,
+  ROBINHOOD_CANONICAL_USDG,
+  type RobinhoodStockTokenMarketData,
+  type RobinhoodTradingCapabilities
+} from "./robinhood.js";
 
 const addressSchema = z.string().regex(/^0x[a-fA-F0-9]{40}$/);
 
@@ -17,6 +27,21 @@ export type PortfolioToken = {
   balance: string | null;
   priceUsd: string | null;
   valueUsd: string | null;
+  assetType?: "stock_token" | "canonical_stablecoin";
+  stockToken?: {
+    canonical: true;
+    uid: string;
+    underlyingSymbol: string;
+    multiplier: string;
+    bidUsd: string | null;
+    askUsd: string | null;
+    priceMethod: "midpoint_multiplier_adjusted" | null;
+    priceGeneratedAt: string | null;
+    dailyTradingVolume: string | null;
+    tradingHalt: boolean;
+    status: string;
+    tradingCapabilities: RobinhoodTradingCapabilities | null;
+  };
 };
 
 export type RecentActivity = {
@@ -91,11 +116,6 @@ type ProviderTransaction = {
   timestamp?: unknown;
 };
 
-const alchemy = new Alchemy({
-  apiKey: config.alchemyApiKey,
-  authToken: config.alchemyApiKey
-});
-
 export async function getPortfolioSnapshot(address: string, chainInput?: string): Promise<PortfolioSnapshot> {
   const parsedAddress = addressSchema.safeParse(address);
   if (!parsedAddress.success) {
@@ -115,29 +135,70 @@ export async function getPortfolioSnapshot(address: string, chainInput?: string)
     address: parsedAddress.data,
     networks: chains.map(chain => chain.alchemyNetwork)
   };
+  const recentActivityChains = chains.filter(chain => chain.slug !== "robinhood");
+  const recentActivityAddress = {
+    address: parsedAddress.data,
+    networks: recentActivityChains.map(chain => chain.alchemyNetwork)
+  };
 
   const [tokenResponse, activityResult] = await Promise.all([
-    providerCall(
-      alchemy.portfolio.getTokensByWallet([portfolioAddress], true, true, true),
-      "Alchemy portfolio token request"
-    ),
-    providerCall(
-      alchemy.portfolio.getTransactionsByWallet([portfolioAddress], undefined, undefined, 10),
-      "Alchemy recent activity request"
-    )
-      .then(response => ({ response, warning: null }))
-      .catch(error => ({
-        response: { transactions: [] },
-        warning: error instanceof Error ? `${error.message}; recentActivity is incomplete.` : "Recent activity is incomplete."
-      }))
+    getAlchemyPortfolioTokens([portfolioAddress]),
+    recentActivityChains.length === 0
+      ? Promise.resolve({
+          response: { transactions: [] },
+          warning:
+            "Portfolio recentActivity excludes Robinhood Chain; WalletLens TxLens transaction history remains available."
+        })
+      : getAlchemyPortfolioTransactions([recentActivityAddress], 10)
+          .then(response => ({
+            response,
+            warning: chains.length === recentActivityChains.length
+              ? null
+              : "Portfolio recentActivity excludes Robinhood Chain; WalletLens TxLens transaction history remains available."
+          }))
+          .catch(error => ({
+            response: { transactions: [] },
+            warning: error instanceof Error ? `${error.message}; recentActivity is incomplete.` : "Recent activity is incomplete."
+          }))
   ]);
 
-  const tokens = tokenResponse.data.tokens
+  let tokens = tokenResponse.data.tokens
     .map(token => normalizeToken(token as ProviderToken))
     .filter(token => token.rawBalance !== "0");
+  const enrichmentWarnings: string[] = [];
+  if (chains.some(chain => chain.slug === "robinhood")) {
+    tokens = tokens.map(enrichRobinhoodCanonicalAsset);
+    if (tokens.some(token => token.assetType === "canonical_stablecoin")) {
+      enrichmentWarnings.push("Canonical Robinhood Chain USDG is valued at its $1 USD reference price.");
+    }
+
+    try {
+      const marketData = await getRobinhoodStockTokenMarketData(
+        tokens.filter(token => token.chain === "robinhood").map(token => token.contract),
+        config.providerTimeoutMs
+      );
+      tokens = tokens.map(token => enrichRobinhoodStockToken(token, marketData));
+      if (tokens.some(token => token.assetType === "stock_token")) {
+        enrichmentWarnings.push(
+          "Robinhood Stock Token USD values use midpoint bid/ask prices multiplied by Robinhood's current corporate-action multiplier."
+        );
+      }
+      const haltedSymbols = tokens
+        .filter(token => token.stockToken?.tradingHalt)
+        .map(token => token.stockToken!.underlyingSymbol);
+      if (haltedSymbols.length > 0) {
+        enrichmentWarnings.push(`Robinhood reports an active trading halt for: ${[...new Set(haltedSymbols)].join(", ")}.`);
+      }
+    } catch (error) {
+      enrichmentWarnings.push(
+        `${error instanceof Error ? error.message : "Robinhood Stock Token enrichment failed"}; canonical stock-token metadata and prices may be incomplete.`
+      );
+    }
+  }
   const recentActivity = (activityResult.response.transactions as ProviderTransaction[]).map(normalizeTransaction);
   const summary = buildPortfolioSummary(tokens);
   if (activityResult.warning) summary.warnings.push(activityResult.warning);
+  summary.warnings.push(...enrichmentWarnings);
 
   return {
     address: parsedAddress.data,
@@ -151,26 +212,27 @@ export async function getPortfolioSnapshot(address: string, chainInput?: string)
   };
 }
 
-async function providerCall<T>(request: Promise<T>, label: string): Promise<T> {
-  let timeout: NodeJS.Timeout | undefined;
-  const timeoutPromise = new Promise<never>((_resolve, reject) => {
-    timeout = setTimeout(() => reject(new Error(`${label} timed out after ${config.providerTimeoutMs}ms`)), config.providerTimeoutMs);
-  });
-
-  try {
-    return await Promise.race([request, timeoutPromise]);
-  } catch (cause) {
-    const error = new Error(`${label} failed: ${cause instanceof Error ? cause.message : String(cause)}`);
-    error.name = "ProviderError";
-    throw error;
-  } finally {
-    if (timeout) clearTimeout(timeout);
+function enrichRobinhoodCanonicalAsset(token: PortfolioToken): PortfolioToken {
+  if (
+    token.chain !== "robinhood" ||
+    token.contract?.toLowerCase() !== ROBINHOOD_CANONICAL_USDG
+  ) {
+    return token;
   }
+
+  return {
+    ...token,
+    symbol: "USDG",
+    name: "Global Dollar",
+    priceUsd: "1",
+    valueUsd: token.balance ? multiplyDecimalStrings(token.balance, "1") : null,
+    assetType: "canonical_stablecoin"
+  };
 }
 
 function normalizeToken(token: ProviderToken): PortfolioToken {
   const network = typeof token.network === "string" ? token.network : undefined;
-  const chain = network ? networkToChain(network as never) : undefined;
+  const chain = network ? networkToChain(network) : undefined;
   const metadata = token.tokenMetadata;
   const decimals = metadata?.decimals ?? null;
   const rawBalance = normalizeRawBalance(token.tokenBalance);
@@ -192,9 +254,46 @@ function normalizeToken(token: ProviderToken): PortfolioToken {
   };
 }
 
+function enrichRobinhoodStockToken(
+  token: PortfolioToken,
+  marketData: Map<string, RobinhoodStockTokenMarketData>
+): PortfolioToken {
+  if (token.chain !== "robinhood" || !token.contract) return token;
+  const data = marketData.get(token.contract.toLowerCase());
+  if (!data) return token;
+
+  const midpoint = data.quote ? averageDecimalStrings(data.quote.bid, data.quote.ask) : null;
+  const adjustedPrice = midpoint ? multiplyDecimalStrings(midpoint, data.asset.currentMultiplier) : null;
+  const priceUsd = adjustedPrice ?? token.priceUsd;
+
+  return {
+    ...token,
+    symbol: data.asset.tokenSymbol,
+    name: data.asset.tokenName,
+    logo: data.asset.logoUrl ?? token.logo,
+    priceUsd,
+    valueUsd: token.balance && priceUsd ? multiplyDecimalStrings(token.balance, priceUsd) : null,
+    assetType: "stock_token",
+    stockToken: {
+      canonical: true,
+      uid: data.asset.id,
+      underlyingSymbol: data.asset.tokenSymbol,
+      multiplier: data.asset.currentMultiplier,
+      bidUsd: data.quote?.bid ?? null,
+      askUsd: data.quote?.ask ?? null,
+      priceMethod: adjustedPrice ? "midpoint_multiplier_adjusted" : null,
+      priceGeneratedAt: data.quote?.generatedAt ?? null,
+      dailyTradingVolume: data.quote?.dailyTradingVolume ?? null,
+      tradingHalt: data.quote?.isTradingHalt ?? false,
+      status: data.asset.status,
+      tradingCapabilities: data.asset.tradingCapabilities
+    }
+  };
+}
+
 function normalizeTransaction(tx: ProviderTransaction): RecentActivity {
   const network = typeof tx.network === "string" ? tx.network : undefined;
-  const chain = network ? networkToChain(network as never) : undefined;
+  const chain = network ? networkToChain(network) : undefined;
 
   return {
     chain: chain?.slug ?? network ?? null,
@@ -255,6 +354,39 @@ export function multiplyDecimalStrings(left: string, right: string, maxFractionD
   const padded = unscaled.toString().padStart(scale + 1, "0");
   const integer = padded.slice(0, -scale);
   const fraction = padded.slice(-scale).replace(/0+$/, "");
+  return fraction ? `${integer}.${fraction}` : integer;
+}
+
+export function averageDecimalStrings(left: string, right: string, maxFractionDigits = 6): string | null {
+  const leftDecimal = parseDecimal(left);
+  const rightDecimal = parseDecimal(right);
+  if (!leftDecimal || !rightDecimal) return null;
+
+  const scale = Math.max(leftDecimal.scale, rightDecimal.scale);
+  const leftUnscaled = leftDecimal.unscaled * 10n ** BigInt(scale - leftDecimal.scale);
+  const rightUnscaled = rightDecimal.unscaled * 10n ** BigInt(scale - rightDecimal.scale);
+  const sum = leftUnscaled + rightUnscaled;
+  if (sum % 2n === 0n) {
+    return formatScaledDecimal(sum / 2n, scale, maxFractionDigits);
+  }
+  return formatScaledDecimal(sum * 5n, scale + 1, maxFractionDigits);
+}
+
+function formatScaledDecimal(unscaled: bigint, scale: number, maxFractionDigits: number): string | null {
+  if (!Number.isInteger(maxFractionDigits) || maxFractionDigits < 0) return null;
+  let normalized = unscaled;
+  let normalizedScale = scale;
+  if (normalizedScale > maxFractionDigits) {
+    const divisor = 10n ** BigInt(normalizedScale - maxFractionDigits);
+    const remainder = normalized % divisor;
+    normalized /= divisor;
+    if (remainder * 2n >= divisor) normalized += 1n;
+    normalizedScale = maxFractionDigits;
+  }
+  if (normalizedScale === 0) return normalized.toString();
+  const padded = normalized.toString().padStart(normalizedScale + 1, "0");
+  const integer = padded.slice(0, -normalizedScale);
+  const fraction = padded.slice(-normalizedScale).replace(/0+$/, "");
   return fraction ? `${integer}.${fraction}` : integer;
 }
 

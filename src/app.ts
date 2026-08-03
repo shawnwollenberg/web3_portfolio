@@ -1,7 +1,7 @@
 import express from "express";
 import { z } from "zod";
 import { analyticsMiddleware } from "./analytics.js";
-import { parseChains } from "./chains.js";
+import { parseChains, supportedChainSlugs } from "./chains.js";
 import { config } from "./config.js";
 import { getPortfolioSnapshot, type PortfolioSnapshot } from "./portfolio.js";
 import { portfolioExample, txHistoryExample, walletReportExample } from "./schemas.js";
@@ -11,7 +11,8 @@ import { createPaymentMiddleware, paymentRouteConfig } from "./x402.js";
 
 const demoWallet = "0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea";
 const ethExampleWallet = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045";
-const npmMcpPackage = "@shawnwollenberg/walletlens-mcp@0.1.0";
+const robinhoodExampleWallet = "0xfac1d7dC76bE90C5Cadd5B022af7838dd8190F16";
+const npmMcpPackage = "@shawnwollenberg/walletlens-mcp@0.1.1";
 const npmMcpUrl = "https://www.npmjs.com/package/@shawnwollenberg/walletlens-mcp";
 const evmAddressPattern = /^0x[a-fA-F0-9]{40}$/;
 const walletsToTry = [
@@ -26,6 +27,12 @@ const walletsToTry = [
     address: ethExampleWallet,
     chains: "base,ethereum",
     prompt: "analyze this public Ethereum wallet and summarize portfolio plus recent activity"
+  },
+  {
+    label: "Robinhood Stock Token wallet",
+    address: robinhoodExampleWallet,
+    chains: "robinhood",
+    prompt: "analyze canonical Robinhood Stock Token holdings, USD values, trading halts, and recent transfers"
   },
   {
     label: "Ethereum burn address",
@@ -147,7 +154,7 @@ export function createApp() {
     res.json({
       ok: true,
       name: "WalletLens API",
-      version: "1.0.0",
+      version: "1.1.0",
       timestamp: new Date().toISOString(),
       uptimeSeconds: Math.round(process.uptime()),
       baseUrl: config.publicBaseUrl,
@@ -172,7 +179,7 @@ export function createApp() {
         "/.well-known/x402",
         "/.well-known/x402.json"
       ],
-      supportedChains: ["base", "ethereum", "optimism", "arbitrum", "polygon"],
+      supportedChains: [...supportedChainSlugs],
       mcp: buildMcpMetadata(),
       docs: {
         openapi: `${config.publicBaseUrl}/openapi.json`,
@@ -266,7 +273,7 @@ export function createApp() {
         address: "EVM address, 0x plus 40 hex characters"
       },
       optionalParams: {
-        chains: "Comma-separated chain slugs. Supported: base, ethereum, optimism, arbitrum, polygon.",
+        chains: "Comma-separated chain slugs. Supported: base, ethereum, optimism, arbitrum, polygon, robinhood.",
         limit: "Transaction row limit for /tx-history and /wallet-report, 1-100.",
         days: "Transaction lookback window in days, 1-365.",
         category: "all, external, internal, erc20, erc721, or erc1155."
@@ -370,7 +377,7 @@ function buildX402Discovery() {
     version: "1",
     service: "WalletLens",
     description:
-      "Agent-native EVM wallet intelligence suite for portfolio snapshots, token balances, Base wallet lookup, USDC transfers, and enriched transaction history.",
+      "Agent-native EVM wallet intelligence for portfolio snapshots, token balances, Robinhood Stock Tokens, Base USDC activity, and enriched transaction history.",
     baseUrl: config.publicBaseUrl,
     discovery: {
       canonical: `${config.publicBaseUrl}/.well-known/x402.json`,
@@ -386,7 +393,7 @@ function buildDiscoverPayload() {
     ok: true,
     service: "WalletLens",
     description:
-      "WalletLens is an x402-paid EVM wallet intelligence API for agents. Use it for portfolio snapshots, transaction history, and bundled wallet reports.",
+      "WalletLens is an x402-paid EVM wallet intelligence API for agents, including canonical Robinhood Stock Token portfolios, pricing, and transaction history.",
     baseUrl: config.publicBaseUrl,
     payment: {
       protocol: "x402",
@@ -409,7 +416,8 @@ function buildDiscoverPayload() {
       "get token balances for an EVM address",
       "find recent USDC transfers",
       "get enriched transaction history",
-      "combine wallet portfolio and recent activity"
+      "combine wallet portfolio and recent activity",
+      "analyze canonical Robinhood Stock Tokens and tokenized ETFs"
     ],
     freeResources: {
       status: `${config.publicBaseUrl}/status`,
@@ -434,7 +442,7 @@ function buildDiscoverPayload() {
     paidResources: getPaidResources(),
     howToCall: getHowToCallExamples(),
     walletsToTry: buildWalletLinks(),
-    supportedChains: ["base", "ethereum", "optimism", "arbitrum", "polygon"]
+    supportedChains: [...supportedChainSlugs]
   };
 }
 
@@ -615,6 +623,14 @@ function getHowToCallExamples() {
       expectedUnpaidStatus: 402
     },
     {
+      intent: "Analyze Robinhood Stock Tokens and recent Robinhood Chain activity",
+      method: "GET",
+      path: "/wallet-report",
+      url: `${config.publicBaseUrl}/wallet-report?address=${robinhoodExampleWallet}&chains=robinhood&limit=20`,
+      curl: `curl -i "${config.publicBaseUrl}/wallet-report?address=${robinhoodExampleWallet}&chains=robinhood&limit=20"`,
+      expectedUnpaidStatus: 402
+    },
+    {
       intent: "Get enriched transaction history only",
       method: "GET",
       path: "/tx-history",
@@ -686,7 +702,7 @@ function buildIntentPayload(req: express.Request) {
         ]
       : [
           "Provide an EVM address as address=0x... or include one in q.",
-          "Use only supported chain slugs: base, ethereum, optimism, arbitrum, or polygon.",
+          "Use only supported chain slugs: base, ethereum, optimism, arbitrum, polygon, or robinhood.",
           `Try /analyze?address=${demoWallet}&chains=base`,
           `Try /ask?q=analyze%20wallet%20${demoWallet}%20on%20base`
         ],
@@ -740,7 +756,8 @@ function chooseIntentEndpoint(text: string): "/portfolio" | "/tx-history" | "/wa
 
 function extractChains(text: string) {
   const lower = text.toLowerCase();
-  const chains = ["base", "ethereum", "optimism", "arbitrum", "polygon"].filter(chain => lower.includes(chain));
+  const chains = [...supportedChainSlugs].filter(chain => lower.includes(chain));
+  if (lower.includes("robin hood") && !chains.includes("robinhood")) chains.push("robinhood");
   if (lower.includes("eth") && !chains.includes("ethereum")) chains.push("ethereum");
   return chains.length > 0 ? chains.join(",") : undefined;
 }

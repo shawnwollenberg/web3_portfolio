@@ -34,6 +34,29 @@ describe("agent request validation", () => {
     assert.equal(body.paidUrl, null);
   });
 
+  it("produces a Robinhood Chain payable URL", async () => {
+    const response = await fetch(`${baseUrl}/analyze?address=${address}&chains=robinhood`);
+    assert.equal(response.status, 200);
+    const body = (await response.json()) as { readyToPay: boolean; paidUrl: string | null };
+    assert.equal(body.readyToPay, true);
+    assert.match(body.paidUrl ?? "", /chains=robinhood/);
+  });
+
+  it("negotiates Robinhood reports with Bazaar discovery metadata", async () => {
+    const response = await fetch(`${baseUrl}/portfolio?address=${address}&chains=robinhood`);
+    assert.equal(response.status, 402);
+
+    const paymentRequired = response.headers.get("payment-required");
+    assert.ok(paymentRequired);
+    const challenge = JSON.parse(Buffer.from(paymentRequired, "base64url").toString("utf8")) as {
+      resource?: { url?: string; description?: string };
+      extensions?: { bazaar?: unknown };
+    };
+    assert.equal(challenge.resource?.url, "https://walletlens.wallyweb.com/portfolio");
+    assert.match(challenge.resource?.description ?? "", /Robinhood Stock Tokens/);
+    assert.ok(challenge.extensions?.bazaar);
+  });
+
   it("routes combined portfolio and transaction intent to the wallet report", async () => {
     const query = encodeURIComponent(`show portfolio balances and transaction history for ${address} on base`);
     const response = await fetch(`${baseUrl}/ask?q=${query}`);
@@ -48,7 +71,7 @@ describe("agent request validation", () => {
     };
 
     assert.equal(response.status, 200);
-    assert.equal(body.mcp?.package, "@shawnwollenberg/walletlens-mcp@0.1.0");
+    assert.equal(body.mcp?.package, "@shawnwollenberg/walletlens-mcp@0.1.1");
     assert.match(body.mcp?.run ?? "", /npx --yes/);
     assert.deepEqual(body.mcp?.paidTools, ["get_portfolio", "get_tx_history", "get_wallet_report"]);
   });

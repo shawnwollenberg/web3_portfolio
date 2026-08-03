@@ -2,7 +2,7 @@ import {
   AssetTransfersCategory,
   SortingOrder,
   type AssetTransfersWithMetadataResult
-} from "alchemy-sdk";
+} from "./alchemy.js";
 import { z } from "zod";
 import { config } from "./config.js";
 import { parseChains, type SupportedChain } from "./chains.js";
@@ -194,7 +194,7 @@ async function getTransfersForChain(
 ): Promise<ChainTransferResult> {
   const response = await getAssetTransfers(chain, {
     ...(direction === "out" ? { fromAddress: address } : { toAddress: address }),
-    category: [...categoryMap[category]],
+    category: getCategoriesForChain(chain, category),
     excludeZeroValue: true,
     maxCount: `0x${maxCount.toString(16)}`,
     order: SortingOrder.DESCENDING,
@@ -210,6 +210,9 @@ async function getTransfersForChain(
 }
 
 async function getAssetTransfers(chain: SupportedChain, params: Record<string, unknown>) {
+  if (Array.isArray(params.category) && params.category.length === 0) {
+    return { transfers: [], pageKey: undefined };
+  }
   let response: Response;
   try {
     response = await fetch(`https://${chain.alchemyNetwork}.g.alchemy.com/v2/${config.alchemyApiKey}`, {
@@ -401,6 +404,12 @@ function buildSummary(transactions: EnrichedTransaction[], chains: SupportedChai
   }
 
   const warnings = ["USD values are currently null for transaction history."];
+  const withoutInternalTransfers = chains.filter(chain => chain.supportsInternalTransfers === false);
+  if (withoutInternalTransfers.length > 0) {
+    warnings.push(
+      `Internal transfer traces are unavailable for: ${withoutInternalTransfers.map(chain => chain.label).join(", ")}.`
+    );
+  }
 
   return {
     transactionCount: transactions.length,
@@ -416,6 +425,14 @@ function buildSummary(transactions: EnrichedTransaction[], chains: SupportedChai
       .slice(0, 10),
     warnings
   };
+}
+
+function getCategoriesForChain(chain: SupportedChain, category: TxHistoryCategory): string[] {
+  const categories = [...categoryMap[category]];
+  if (chain.supportsInternalTransfers === false) {
+    return categories.filter(item => item !== AssetTransfersCategory.INTERNAL);
+  }
+  return categories;
 }
 
 export function isTimestampWithinLookback(timestamp: string | null | undefined, days: number, now = Date.now()) {

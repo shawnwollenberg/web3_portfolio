@@ -1,6 +1,6 @@
 # WalletLens API
 
-WalletLens is a paid API for EVM wallet intelligence: normalized portfolio snapshots, bundled wallet reports, and enriched transaction history. It is intended for AI agents, portfolio workflows, wallet monitoring tools, Base wallet lookup, USDC transfer analysis, and automation systems that need a clean response shape without maintaining their own multi-chain indexing pipeline.
+WalletLens is a paid API for EVM wallet intelligence: normalized portfolio snapshots, canonical Robinhood Stock Token intelligence, bundled wallet reports, and enriched transaction history. It is intended for AI agents and automation systems that need a clean response without maintaining a multi-chain indexing pipeline.
 
 Base URL:
 
@@ -52,7 +52,7 @@ Recommended evaluation flow:
 WalletLens is available as a published stdio MCP server:
 
 ```bash
-npx --yes @shawnwollenberg/walletlens-mcp@0.1.0
+npx --yes @shawnwollenberg/walletlens-mcp@0.1.1
 ```
 
 The free MCP tools work without a wallet. Paid tools require
@@ -106,6 +106,9 @@ Supported chains:
 - `optimism`
 - `arbitrum`
 - `polygon`
+- `robinhood` (aliases: `robinhood-chain`, `rh`)
+
+Robinhood Chain responses identify canonical Robinhood Stock Tokens from Robinhood's asset registry and include bid/ask quotes, corporate-action multipliers, multiplier-adjusted midpoint USD values, trading-halt status, and available trading capabilities. Canonical Robinhood Chain USDG is valued at its $1 reference price. Internal transfer traces are unavailable on Robinhood Chain; external and token transfers remain available.
 
 Example:
 
@@ -280,6 +283,7 @@ Portfolio, multi-chain:
 
 ```bash
 curl -i "https://walletlens.wallyweb.com/portfolio?address=0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045&chains=base,ethereum,arbitrum,optimism,polygon"
+curl -i "https://walletlens.wallyweb.com/wallet-report?address=0xfac1d7dC76bE90C5Cadd5B022af7838dd8190F16&chains=robinhood&limit=20"
 ```
 
 TxLens transaction history:
