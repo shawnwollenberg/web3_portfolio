@@ -17,6 +17,7 @@ GET /
 GET /health
 GET /status
 GET /preview
+GET /preview/robinhood
 GET /pricing
 GET /examples
 GET /examples?format=json
@@ -30,6 +31,9 @@ GET /ask?q=analyze wallet 0x... on base
 GET /analyze?address=0x...&chains=base
 GET /.well-known/x402
 GET /.well-known/x402.json
+GET /v2/x402/discovery/resources
+GET /.well-known/api-catalog
+GET /apis.json
 GET /openapi.json
 GET /llms.txt
 GET /llms-full.txt
@@ -52,7 +56,7 @@ Recommended evaluation flow:
 WalletLens is available as a published stdio MCP server:
 
 ```bash
-npx --yes @shawnwollenberg/walletlens-mcp@0.1.1
+npx --yes @shawnwollenberg/walletlens-mcp@0.1.2
 ```
 
 The free MCP tools work without a wallet. Paid tools require
@@ -63,6 +67,8 @@ the pinned WalletLens recipient before signing. Each paid invocation makes at
 most one payment attempt.
 
 Package: https://www.npmjs.com/package/@shawnwollenberg/walletlens-mcp
+Official MCP Registry name: `io.github.shawnwollenberg/walletlens`
+Registry lookup: https://registry.modelcontextprotocol.io/v0.1/servers?search=io.github.shawnwollenberg%2Fwalletlens
 
 ## Payment
 
@@ -233,6 +239,7 @@ Free cached live preview:
 
 ```bash
 curl https://walletlens.wallyweb.com/preview
+curl https://walletlens.wallyweb.com/preview/robinhood
 ```
 
 The preview is intentionally limited to the configured demo wallet and returns a compact token/activity list. Use paid `/portfolio` calls for arbitrary wallet addresses and full output.

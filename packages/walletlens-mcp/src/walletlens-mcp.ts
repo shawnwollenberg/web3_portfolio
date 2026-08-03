@@ -15,7 +15,7 @@ import {
 type HexPrivateKey = `0x${string}`;
 type PaidEndpoint = "/portfolio" | "/tx-history" | "/wallet-report";
 
-const PACKAGE_VERSION = "0.1.1";
+const PACKAGE_VERSION = "0.1.2";
 const DEFAULT_BASE_URL = "https://walletlens.wallyweb.com";
 const DEFAULT_PAY_TO = "0xA7c82E9775A9594c673E3Fde8a42D3D17dE2B957";
 

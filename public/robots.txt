@@ -7,3 +7,7 @@ OpenAPI: https://walletlens.wallyweb.com/openapi.json
 Discover: https://walletlens.wallyweb.com/discover
 Wallets-To-Try: https://walletlens.wallyweb.com/wallets-to-try
 X402: https://walletlens.wallyweb.com/.well-known/x402
+X402-Catalog: https://walletlens.wallyweb.com/v2/x402/discovery/resources
+API-Catalog: https://walletlens.wallyweb.com/.well-known/api-catalog
+Robinhood-Preview: https://walletlens.wallyweb.com/preview/robinhood
+Sitemap: https://walletlens.wallyweb.com/sitemap.xml

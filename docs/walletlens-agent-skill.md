@@ -10,14 +10,15 @@ Use this skill when an agent needs EVM wallet intelligence, a normalized portfol
 - Agent discovery: `GET /discover`
 - Seed wallets: `GET /wallets-to-try`
 - Intent helpers: `GET /ask?q=...`, `GET /analyze?address=...&chains=...`
-- Free preview: `GET /preview`
+- Free previews: `GET /preview` and `GET /preview/robinhood`
 - Free response samples: `GET /examples/portfolio`, `GET /examples/tx-history`, `GET /examples/wallet-report`
 - Status/resource index: `GET /status`
 - Discovery: `GET /.well-known/x402.json` or `GET /.well-known/x402`
 - OpenAPI: `GET /openapi.json`
 - Examples: `GET /examples?format=json`
-- Published MCP package: `@shawnwollenberg/walletlens-mcp@0.1.1`
-- MCP install/run: `npx --yes @shawnwollenberg/walletlens-mcp@0.1.1`
+- Published MCP package: `@shawnwollenberg/walletlens-mcp@0.1.2`
+- Official MCP Registry name: `io.github.shawnwollenberg/walletlens`
+- MCP install/run: `npx --yes @shawnwollenberg/walletlens-mcp@0.1.2`
 - Payment protocol: x402
 - Payment network: Base mainnet, `eip155:8453`
 - Price: `$0.02` USDC per paid call
@@ -31,7 +32,7 @@ Run the published stdio server from an MCP-compatible client:
   "mcpServers": {
     "walletlens": {
       "command": "npx",
-      "args": ["--yes", "@shawnwollenberg/walletlens-mcp@0.1.1"],
+      "args": ["--yes", "@shawnwollenberg/walletlens-mcp@0.1.2"],
       "env": {
         "WALLETLENS_X402_PRIVATE_KEY": "0xYOUR_DEDICATED_AGENT_PRIVATE_KEY",
         "WALLETLENS_MAX_PAYMENT_USDC": "0.02",
@@ -80,6 +81,7 @@ GET https://walletlens.wallyweb.com/ask?q=analyze wallet <evmAddress> on base
 GET https://walletlens.wallyweb.com/analyze?address=<evmAddress>&chains=<chains>
 GET https://walletlens.wallyweb.com/quote?address=<evmAddress>&chains=<chains>
 GET https://walletlens.wallyweb.com/preview
+GET https://walletlens.wallyweb.com/preview/robinhood
 ```
 
 Use `/discover` to find capabilities and examples. Use `/wallets-to-try` to get seeded wallet addresses with direct helper and paid report URLs. Use `/ask` or `/analyze` to convert wallet-analysis intent into the recommended paid URL. Use `/quote` to validate the address and inspect price before payment. Use `/examples/wallet-report`, `/examples/tx-history`, and `/examples/portfolio` to inspect paid response shapes without payment. Use the paid endpoint when live data for an arbitrary wallet or full output is needed.

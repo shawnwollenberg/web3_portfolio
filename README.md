@@ -38,6 +38,12 @@ Free cached live preview:
 curl http://localhost:3000/preview
 ```
 
+Free Robinhood Stock Token proof:
+
+```bash
+curl http://localhost:3000/preview/robinhood
+```
+
 Free paid-call quote:
 
 ```bash
@@ -146,7 +152,7 @@ https://www.npmjs.com/package/@shawnwollenberg/walletlens-mcp
 Run the published package without cloning this repository:
 
 ```bash
-npx --yes @shawnwollenberg/walletlens-mcp@0.1.1
+npx --yes @shawnwollenberg/walletlens-mcp@0.1.2
 ```
 
 Repository contributors can run the same server from source with `npm run mcp`.
@@ -174,7 +180,7 @@ Example MCP client configuration:
   "mcpServers": {
     "walletlens": {
       "command": "npx",
-      "args": ["--yes", "@shawnwollenberg/walletlens-mcp@0.1.1"],
+      "args": ["--yes", "@shawnwollenberg/walletlens-mcp@0.1.2"],
       "env": {
         "WALLETLENS_X402_PRIVATE_KEY": "0xYOUR_DEDICATED_AGENT_PRIVATE_KEY",
         "WALLETLENS_MAX_PAYMENT_USDC": "0.02",
@@ -233,10 +239,13 @@ The deploy output includes `PortfolioApiUrl`. Use that base URL for:
 - `GET /health`
 - `GET /status`
 - `GET /preview`
+- `GET /preview/robinhood`
 - `GET /quote?address=...&chains=base`
 - `GET /pricing`
 - `GET /examples`
 - `GET /.well-known/x402.json`
+- `GET /v2/x402/discovery/resources`
+- `GET /.well-known/api-catalog`
 - `GET /portfolio?address=...&chains=base,ethereum`
 - `GET /tx-history?address=...&chains=base&limit=20`
 - `GET /wallet-report?address=...&chains=base&limit=20`

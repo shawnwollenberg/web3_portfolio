@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://walletlens.wallyweb.com/</loc></url>
+  <url><loc>https://walletlens.wallyweb.com/preview</loc></url>
+  <url><loc>https://walletlens.wallyweb.com/preview/robinhood</loc></url>
+  <url><loc>https://walletlens.wallyweb.com/discover</loc></url>
+  <url><loc>https://walletlens.wallyweb.com/wallets-to-try</loc></url>
+  <url><loc>https://walletlens.wallyweb.com/examples</loc></url>
+  <url><loc>https://walletlens.wallyweb.com/pricing</loc></url>
+  <url><loc>https://walletlens.wallyweb.com/openapi.json</loc></url>
+  <url><loc>https://walletlens.wallyweb.com/llms.txt</loc></url>
+  <url><loc>https://walletlens.wallyweb.com/llms-full.txt</loc></url>
+</urlset>

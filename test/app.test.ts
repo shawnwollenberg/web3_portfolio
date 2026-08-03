@@ -71,7 +71,7 @@ describe("agent request validation", () => {
     };
 
     assert.equal(response.status, 200);
-    assert.equal(body.mcp?.package, "@shawnwollenberg/walletlens-mcp@0.1.1");
+    assert.equal(body.mcp?.package, "@shawnwollenberg/walletlens-mcp@0.1.2");
     assert.match(body.mcp?.run ?? "", /npx --yes/);
     assert.deepEqual(body.mcp?.paidTools, ["get_portfolio", "get_tx_history", "get_wallet_report"]);
   });
@@ -79,5 +79,58 @@ describe("agent request validation", () => {
   it("rejects a missing paid-route address before payment middleware", async () => {
     const response = await fetch(`${baseUrl}/portfolio?chains=base`);
     assert.equal(response.status, 400);
+  });
+
+  it("serves local x402 catalogs on common agent discovery paths", async () => {
+    for (const path of [
+      "/v2/x402/discovery/resources",
+      "/x402/discovery/resources",
+      "/discovery/resources",
+      "/.well-known/x402/discovery/resources",
+      "/v1/x402/discovery/resources"
+    ]) {
+      const response = await fetch(`${baseUrl}${path}`);
+      assert.equal(response.status, 200);
+      const body = (await response.json()) as {
+        items?: Array<{ resource?: string; accepts?: Array<{ amount?: string; asset?: string }> }>;
+        pagination?: { total?: number };
+      };
+      assert.equal(body.items?.length, 3);
+      assert.equal(body.pagination?.total, 3);
+      assert.ok(body.items?.some(item => item.resource?.endsWith("/wallet-report")));
+      assert.equal(body.items?.[0]?.accepts?.[0]?.amount, "20000");
+      assert.match(body.items?.[0]?.accepts?.[0]?.asset ?? "", /^0x[a-fA-F0-9]{40}$/);
+    }
+  });
+
+  it("returns API catalog metadata on observed discovery aliases", async () => {
+    for (const path of ["/.well-known/api-catalog", "/apis.json"]) {
+      const response = await fetch(`${baseUrl}${path}`);
+      assert.equal(response.status, 200);
+      const body = (await response.json()) as { openapi?: string; mcp?: { name?: string }; robinhoodPreview?: string };
+      assert.match(body.openapi ?? "", /openapi\.json$/);
+      assert.equal(body.mcp?.name, "io.github.shawnwollenberg/walletlens");
+      assert.match(body.robinhoodPreview ?? "", /preview\/robinhood$/);
+    }
+  });
+
+  it("answers HEAD paid-route probes without requiring an address", async () => {
+    const response = await fetch(`${baseUrl}/wallet-report`, { method: "HEAD" });
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get("allow"), "GET, HEAD");
+    assert.equal(response.headers.get("x-walletlens-required-parameter"), "address");
+  });
+
+  it("guides POST clients to deterministic GET paid URLs", async () => {
+    const response = await fetch(`${baseUrl}/wallet-report`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ address })
+    });
+    assert.equal(response.status, 405);
+    assert.equal(response.headers.get("allow"), "GET, HEAD");
+    const body = (await response.json()) as { supportedMethod?: string; example?: string };
+    assert.equal(body.supportedMethod, "GET");
+    assert.match(body.example ?? "", /address=0x/);
   });
 });

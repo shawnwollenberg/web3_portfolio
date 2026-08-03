@@ -1,6 +1,6 @@
 {
   "name": "walletlens",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "WalletLens: paid x402 API for EVM wallet reports, portfolio snapshots, Robinhood Stock Tokens, and transaction history.",
   "type": "module",
   "main": "dist/src/server.js",
