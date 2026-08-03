@@ -1,6 +1,7 @@
 {
   "name": "@shawnwollenberg/walletlens-mcp",
-  "version": "0.1.1",
+  "version": "0.1.2",
+  "mcpName": "io.github.shawnwollenberg/walletlens",
   "description": "MCP server for WalletLens EVM wallet intelligence, Robinhood Stock Tokens, and x402-paid reports.",
   "type": "module",
   "main": "dist/walletlens-mcp.js",
@@ -10,7 +11,8 @@
   "files": [
     "dist",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "server.json"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",

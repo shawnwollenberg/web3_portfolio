@@ -12,9 +12,20 @@ import { createPaymentMiddleware, paymentRouteConfig } from "./x402.js";
 const demoWallet = "0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea";
 const ethExampleWallet = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045";
 const robinhoodExampleWallet = "0xfac1d7dC76bE90C5Cadd5B022af7838dd8190F16";
-const npmMcpPackage = "@shawnwollenberg/walletlens-mcp@0.1.1";
+const serviceVersion = "1.2.0";
+const npmMcpPackage = "@shawnwollenberg/walletlens-mcp@0.1.2";
 const npmMcpUrl = "https://www.npmjs.com/package/@shawnwollenberg/walletlens-mcp";
+const officialMcpName = "io.github.shawnwollenberg/walletlens";
+const officialMcpRegistryUrl = `https://registry.modelcontextprotocol.io/v0.1/servers?search=${encodeURIComponent(officialMcpName)}`;
 const evmAddressPattern = /^0x[a-fA-F0-9]{40}$/;
+const paidEndpointPaths = ["/portfolio", "/tx-history", "/wallet-report"] as const;
+const x402CatalogPaths = [
+  "/v2/x402/discovery/resources",
+  "/x402/discovery/resources",
+  "/discovery/resources",
+  "/.well-known/x402/discovery/resources",
+  "/v1/x402/discovery/resources"
+] as const;
 const walletsToTry = [
   {
     label: "Base USDC demo wallet",
@@ -84,8 +95,34 @@ type PreviewCache = {
   snapshot: PortfolioSnapshot;
 };
 
-let previewCache: PreviewCache | null = null;
-let previewInFlight: Promise<PortfolioSnapshot> | null = null;
+type PreviewTarget = {
+  key: string;
+  label: string;
+  description: string;
+  address: string;
+  chains: string;
+};
+
+const previewTargets = {
+  base: {
+    key: "base",
+    label: "Base wallet portfolio",
+    description: "Free cached Base wallet portfolio proof for agents evaluating WalletLens.",
+    address: config.previewWalletAddress,
+    chains: config.previewWalletChains
+  },
+  robinhood: {
+    key: "robinhood",
+    label: "Robinhood Stock Token portfolio",
+    description:
+      "Free cached proof of canonical Robinhood Stock Token detection, multiplier-adjusted pricing, USDG valuation, and trading-halt metadata.",
+    address: robinhoodExampleWallet,
+    chains: "robinhood"
+  }
+} satisfies Record<string, PreviewTarget>;
+
+const previewCaches = new Map<string, PreviewCache>();
+const previewInFlight = new Map<string, Promise<PreviewCache>>();
 
 export function createApp() {
   const app = express();
@@ -94,6 +131,10 @@ export function createApp() {
   app.use(analyticsMiddleware);
   app.use(express.static("public"));
   app.use("/docs", express.static("docs"));
+
+  app.get("/favicon.ico", (_req, res) => {
+    res.redirect(308, "/favicon.svg");
+  });
 
   app.get("/pricing", (_req, res) => {
     res.sendFile("pricing.html", { root: "public" });
@@ -154,7 +195,7 @@ export function createApp() {
     res.json({
       ok: true,
       name: "WalletLens API",
-      version: "1.1.0",
+      version: serviceVersion,
       timestamp: new Date().toISOString(),
       uptimeSeconds: Math.round(process.uptime()),
       baseUrl: config.publicBaseUrl,
@@ -163,6 +204,7 @@ export function createApp() {
       freeResources: [
         "/",
         "/preview",
+        "/preview/robinhood",
         "/pricing",
         "/examples",
         "/discover",
@@ -177,7 +219,10 @@ export function createApp() {
         "/openapi.json",
         "/quote",
         "/.well-known/x402",
-        "/.well-known/x402.json"
+        "/.well-known/x402.json",
+        "/v2/x402/discovery/resources",
+        "/.well-known/api-catalog",
+        "/apis.json"
       ],
       supportedChains: [...supportedChainSlugs],
       mcp: buildMcpMetadata(),
@@ -198,49 +243,19 @@ export function createApp() {
     });
   });
 
-  app.get("/preview", async (_req, res, next) => {
-    try {
-      const snapshot = await getPreviewSnapshot();
-
-      res.json({
-        name: "WalletLens API live preview",
-        description:
-          "Free cached demo response for agents evaluating the paid WalletLens /portfolio endpoint. For arbitrary wallets, use the paid endpoint.",
-        paidEndpoint: `${config.publicBaseUrl}/portfolio`,
-        price: paymentRouteConfig["GET /portfolio"].accepts.price,
-        network: paymentRouteConfig["GET /portfolio"].accepts.network,
-        previewQuery: {
-          address: config.previewWalletAddress,
-          chains: config.previewWalletChains
-        },
-        cache: {
-          source: previewCache?.source ?? "live",
-          ttlSeconds: config.previewCacheTtlSeconds,
-          expiresAt: new Date(previewCache?.expiresAt ?? Date.now()).toISOString()
-        },
-        limits: {
-          tokens: 10,
-          recentActivity: 5
-        },
-        truncated: {
-          tokens: Math.max(0, snapshot.tokens.length - 10),
-          recentActivity: Math.max(0, snapshot.recentActivity.length - 5)
-        },
-        response: {
-          ...snapshot,
-          tokens: [...snapshot.tokens]
-            .sort((left, right) => Number(right.valueUsd ?? 0) - Number(left.valueUsd ?? 0))
-            .slice(0, 10),
-          recentActivity: snapshot.recentActivity.slice(0, 5)
-        }
-      });
-    } catch (error) {
-      next(error);
-    }
-  });
+  app.get("/preview", (_req, res, next) => servePreview(previewTargets.base, res, next));
+  app.get("/preview/robinhood", (_req, res, next) => servePreview(previewTargets.robinhood, res, next));
 
   app.get(["/.well-known/x402.json", "/.well-known/x402"], (_req, res) => {
     res.json(buildX402Discovery());
+  });
+
+  app.get([...x402CatalogPaths], (req, res) => {
+    res.json(buildLocalX402Catalog(req.path));
+  });
+
+  app.get(["/.well-known/api-catalog", "/apis.json"], (_req, res) => {
+    res.json(buildApiCatalog());
   });
 
   app.get("/quote", (req, res) => {
@@ -281,6 +296,28 @@ export function createApp() {
       examplePaidUrl: `${config.publicBaseUrl}/wallet-report?address=${
         parsed.success ? parsed.data.address : demoWallet
       }&chains=${encodeURIComponent(chains)}&limit=20`
+    });
+  });
+
+  app.head([...paidEndpointPaths], (req, res) => {
+    setPaidEndpointGuidanceHeaders(req.path, res);
+    res.status(200).end();
+  });
+
+  app.post([...paidEndpointPaths], (req, res) => {
+    setPaidEndpointGuidanceHeaders(req.path, res);
+    res.status(405).json({
+      error: "Method not allowed",
+      message: "WalletLens paid resources currently use GET query parameters so the paid URL is deterministic.",
+      requestedMethod: req.method,
+      supportedMethod: "GET",
+      endpoint: req.path,
+      requiredParams: {
+        address: "EVM address, 0x plus 40 hex characters"
+      },
+      example: `${config.publicBaseUrl}${req.path}?address=${demoWallet}&chains=base${req.path === "/portfolio" ? "" : "&limit=20"}`,
+      openapi: `${config.publicBaseUrl}/openapi.json`,
+      discovery: `${config.publicBaseUrl}/.well-known/x402.json`
     });
   });
 
@@ -360,9 +397,11 @@ function wantsJson(req: express.Request) {
 
 function buildMcpMetadata() {
   return {
+    name: officialMcpName,
     transport: "stdio",
     package: npmMcpPackage,
-    registry: npmMcpUrl,
+    registry: officialMcpRegistryUrl,
+    npm: npmMcpUrl,
     run: `npx --yes ${npmMcpPackage}`,
     freeTools: ["get_service_metadata", "get_supported_chains", "get_openapi_schema"],
     paidTools: ["get_portfolio", "get_tx_history", "get_wallet_report"],
@@ -385,6 +424,65 @@ function buildX402Discovery() {
     },
     howToCall: getHowToCallExamples(),
     resources: getPaidResources()
+  };
+}
+
+function buildLocalX402Catalog(requestedPath: string) {
+  const items = Object.entries(paymentRouteConfig).map(([routeKey, route]) => {
+    const [, path] = routeKey.split(" ");
+    const accepts = Array.isArray(route.accepts) ? route.accepts[0] : route.accepts;
+    const bazaar = objectOrNull((route.extensions as Record<string, unknown> | undefined)?.bazaar);
+    const info = objectOrNull(bazaar?.info);
+
+    return {
+      resource: `${config.publicBaseUrl}${path}`,
+      type: "http",
+      x402Version: 2,
+      accepts: [
+        {
+          scheme: accepts.scheme,
+          network: accepts.network,
+          amount: usdcPriceToAtomic(String(accepts.price)),
+          asset: usdcAssetForNetwork(String(accepts.network)),
+          payTo: accepts.payTo
+        }
+      ],
+      lastUpdated: new Date().toISOString(),
+      metadata: {
+        description: route.description,
+        ...info
+      }
+    };
+  });
+
+  return {
+    x402Version: 2,
+    service: "WalletLens",
+    requestedPath,
+    canonical: `${config.publicBaseUrl}/.well-known/x402.json`,
+    items,
+    pagination: {
+      limit: items.length,
+      offset: 0,
+      total: items.length
+    }
+  };
+}
+
+function buildApiCatalog() {
+  return {
+    name: "WalletLens",
+    version: serviceVersion,
+    description:
+      "Agent-native EVM wallet reports with canonical Robinhood Stock Token intelligence and x402 USDC payments.",
+    baseUrl: config.publicBaseUrl,
+    openapi: `${config.publicBaseUrl}/openapi.json`,
+    discovery: `${config.publicBaseUrl}/discover`,
+    x402: `${config.publicBaseUrl}/.well-known/x402.json`,
+    x402Catalog: `${config.publicBaseUrl}/v2/x402/discovery/resources`,
+    mcp: buildMcpMetadata(),
+    flagshipResource: `${config.publicBaseUrl}/wallet-report`,
+    robinhoodPreview: `${config.publicBaseUrl}/preview/robinhood`
   };
 }
 
@@ -427,6 +525,7 @@ function buildDiscoverPayload() {
       analyze: `${config.publicBaseUrl}/analyze?address=${demoWallet}&chains=base`,
       quote: `${config.publicBaseUrl}/quote?address=${demoWallet}&chains=base`,
       preview: `${config.publicBaseUrl}/preview`,
+      robinhoodPreview: `${config.publicBaseUrl}/preview/robinhood`,
       examples: `${config.publicBaseUrl}/examples?format=json`,
       samplePortfolio: `${config.publicBaseUrl}/examples/portfolio`,
       sampleTxHistory: `${config.publicBaseUrl}/examples/tx-history`,
@@ -437,7 +536,9 @@ function buildDiscoverPayload() {
       skill: `${config.publicBaseUrl}/docs/walletlens-agent-skill.md`,
       skillAlias: `${config.publicBaseUrl}/walletlens-agent-skill.md`,
       x402: `${config.publicBaseUrl}/.well-known/x402.json`,
-      x402Alias: `${config.publicBaseUrl}/.well-known/x402`
+      x402Alias: `${config.publicBaseUrl}/.well-known/x402`,
+      x402Catalog: `${config.publicBaseUrl}/v2/x402/discovery/resources`,
+      apiCatalog: `${config.publicBaseUrl}/.well-known/api-catalog`
     },
     paidResources: getPaidResources(),
     howToCall: getHowToCallExamples(),
@@ -495,6 +596,18 @@ function buildExamples() {
         method: "GET",
         url: `${config.publicBaseUrl}/preview`,
         curl: `curl ${config.publicBaseUrl}/preview`
+      },
+      {
+        name: "Inspect canonical Robinhood Stock Token output",
+        method: "GET",
+        url: `${config.publicBaseUrl}/preview/robinhood`,
+        curl: `curl ${config.publicBaseUrl}/preview/robinhood`
+      },
+      {
+        name: "List WalletLens x402 resources in catalog format",
+        method: "GET",
+        url: `${config.publicBaseUrl}/v2/x402/discovery/resources`,
+        curl: `curl ${config.publicBaseUrl}/v2/x402/discovery/resources`
       },
       {
         name: "Inspect sample wallet report JSON without payment",
@@ -840,40 +953,135 @@ function getPaidResources() {
   });
 }
 
-async function getPreviewSnapshot(): Promise<PortfolioSnapshot> {
-  const now = Date.now();
-  if (previewCache && previewCache.expiresAt > now) {
-    return previewCache.snapshot;
-  }
+function setPaidEndpointGuidanceHeaders(path: string, res: express.Response) {
+  res.set("Allow", "GET, HEAD");
+  res.set(
+    "Link",
+    `<${config.publicBaseUrl}/openapi.json>; rel="service-desc", <${config.publicBaseUrl}/.well-known/x402.json>; rel="payment-discovery"`
+  );
+  res.set("X-WalletLens-Method", "GET");
+  res.set("X-WalletLens-Required-Parameter", "address");
+  res.set("X-WalletLens-Endpoint", path);
+}
 
-  if (previewInFlight) return previewInFlight;
-  previewInFlight = refreshPreviewSnapshot(now);
-
+async function servePreview(target: PreviewTarget, res: express.Response, next: express.NextFunction) {
   try {
-    return await previewInFlight;
-  } finally {
-    previewInFlight = null;
+    const cache = await getPreviewSnapshot(target);
+    const snapshot = cache.snapshot;
+
+    res.json({
+      name: `WalletLens ${target.label} live preview`,
+      description: target.description,
+      paidEndpoint: `${config.publicBaseUrl}/wallet-report`,
+      paidUrl: `${config.publicBaseUrl}/wallet-report?address=${target.address}&chains=${encodeURIComponent(target.chains)}&limit=20`,
+      price: paymentRouteConfig["GET /wallet-report"].accepts.price,
+      network: paymentRouteConfig["GET /wallet-report"].accepts.network,
+      previewQuery: {
+        address: target.address,
+        chains: target.chains
+      },
+      cache: {
+        source: cache.source,
+        ttlSeconds: config.previewCacheTtlSeconds,
+        expiresAt: new Date(cache.expiresAt).toISOString()
+      },
+      limits: {
+        tokens: 10,
+        recentActivity: 5
+      },
+      truncated: {
+        tokens: Math.max(0, snapshot.tokens.length - 10),
+        recentActivity: Math.max(0, snapshot.recentActivity.length - 5)
+      },
+      response: {
+        ...snapshot,
+        tokens: [...snapshot.tokens]
+          .sort((left, right) => Number(right.valueUsd ?? 0) - Number(left.valueUsd ?? 0))
+          .slice(0, 10),
+        recentActivity: snapshot.recentActivity.slice(0, 5)
+      }
+    });
+  } catch (error) {
+    next(error);
   }
 }
 
-async function refreshPreviewSnapshot(now: number): Promise<PortfolioSnapshot> {
+async function getPreviewSnapshot(target: PreviewTarget): Promise<PreviewCache> {
+  const now = Date.now();
+  const cached = previewCaches.get(target.key);
+  if (cached && cached.expiresAt > now) {
+    return cached;
+  }
 
+  const existingRequest = previewInFlight.get(target.key);
+  if (existingRequest) return existingRequest;
+  const request = refreshPreviewSnapshot(target, now);
+  previewInFlight.set(target.key, request);
+
+  try {
+    return await request;
+  } finally {
+    previewInFlight.delete(target.key);
+  }
+}
+
+async function refreshPreviewSnapshot(target: PreviewTarget, now: number): Promise<PreviewCache> {
   let source: PreviewCache["source"] = "live";
   let snapshot: PortfolioSnapshot;
 
   try {
-    snapshot = await getPortfolioSnapshot(config.previewWalletAddress, config.previewWalletChains);
+    snapshot = await getPortfolioSnapshot(target.address, target.chains);
   } catch (error) {
-    console.error("Preview snapshot failed; returning static fallback", error);
+    console.error(`${target.label} preview failed; returning fallback`, error);
     source = "fallback";
-    snapshot = portfolioExample as unknown as PortfolioSnapshot;
+    snapshot = buildEmptyPreviewSnapshot(target, error);
   }
 
-  previewCache = {
+  const cache = {
     source,
     snapshot,
     expiresAt: now + config.previewCacheTtlSeconds * 1000
   };
+  previewCaches.set(target.key, cache);
+  return cache;
+}
 
-  return snapshot;
+function buildEmptyPreviewSnapshot(target: PreviewTarget, error: unknown): PortfolioSnapshot {
+  return {
+    address: target.address,
+    timestamp: new Date().toISOString(),
+    chains: target.chains.split(","),
+    summary: {
+      totalValueUsd: null,
+      pricedTokenCount: 0,
+      unpricedTokenCount: 0,
+      tokenCount: 0,
+      stablecoinValueUsd: null,
+      chains: [],
+      topHoldings: [],
+      warnings: [
+        `Live preview temporarily unavailable: ${error instanceof Error ? error.message : "provider request failed"}`
+      ]
+    },
+    tokens: [],
+    positions: [],
+    recentActivity: [],
+    provider: "alchemy"
+  };
+}
+
+function usdcPriceToAtomic(price: string) {
+  const match = price.trim().match(/^\$?(\d+)(?:\.(\d{1,6}))?$/);
+  if (!match) return price;
+  return `${match[1]}${(match[2] ?? "").padEnd(6, "0")}`.replace(/^0+(?=\d)/, "");
+}
+
+function usdcAssetForNetwork(network: string) {
+  if (network === "eip155:8453") return "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
+  if (network === "eip155:84532") return "0x036CbD53842c5426634e7929541eC2318f3dCF7e";
+  return "USDC";
+}
+
+function objectOrNull(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
 }

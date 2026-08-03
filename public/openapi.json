@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "WalletLens API",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "description": "Paid x402 API for EVM wallet reports, normalized portfolio snapshots, canonical Robinhood Stock Token enrichment, and enriched transaction history."
   },
   "servers": [
@@ -190,6 +190,24 @@
         }
       }
     },
+    "/preview/robinhood": {
+      "get": {
+        "summary": "Free cached Robinhood Stock Token preview",
+        "description": "Returns a cached live Robinhood Chain portfolio for a public example wallet. The response demonstrates canonical Stock Token matching, bid/ask quotes, corporate-action multipliers, multiplier-adjusted midpoint values, trading capabilities, and trading-halt metadata without payment.",
+        "responses": {
+          "200": {
+            "description": "Free Robinhood Stock Token preview payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Preview"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/pricing": {
       "get": {
         "summary": "Human-readable pricing page",
@@ -323,6 +341,60 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/X402Discovery"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/x402/discovery/resources": {
+      "get": {
+        "summary": "Catalog-compatible x402 resource listing",
+        "description": "Returns all WalletLens paid resources in a CDP Bazaar-compatible catalog shape. Compatibility aliases are also available at /x402/discovery/resources, /discovery/resources, /.well-known/x402/discovery/resources, and /v1/x402/discovery/resources.",
+        "responses": {
+          "200": {
+            "description": "WalletLens x402 catalog",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/.well-known/api-catalog": {
+      "get": {
+        "summary": "Machine-readable API catalog",
+        "description": "Returns canonical OpenAPI, x402, MCP, preview, and flagship-resource links for automated API discovery.",
+        "responses": {
+          "200": {
+            "description": "WalletLens API catalog",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/apis.json": {
+      "get": {
+        "summary": "API catalog alias",
+        "description": "Alias for /.well-known/api-catalog.",
+        "responses": {
+          "200": {
+            "description": "WalletLens API catalog",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
                 }
               }
             }
@@ -711,9 +783,11 @@
           "mcp": {
             "type": "object",
             "properties": {
+              "name": { "type": "string" },
               "transport": { "type": "string" },
               "package": { "type": "string" },
               "registry": { "type": "string", "format": "uri" },
+              "npm": { "type": "string", "format": "uri" },
               "run": { "type": "string" },
               "freeTools": { "type": "array", "items": { "type": "string" } },
               "paidTools": { "type": "array", "items": { "type": "string" } },
@@ -721,7 +795,7 @@
               "network": { "type": "string" },
               "asset": { "type": "string" }
             },
-            "required": ["transport", "package", "registry", "run", "freeTools", "paidTools", "defaultMaxPaymentUsdc", "network", "asset"]
+            "required": ["name", "transport", "package", "registry", "npm", "run", "freeTools", "paidTools", "defaultMaxPaymentUsdc", "network", "asset"]
           },
           "docs": {
             "type": "object",

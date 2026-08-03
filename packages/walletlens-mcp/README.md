@@ -30,7 +30,7 @@ Add the following to your MCP client configuration. Replace the private key with
   "mcpServers": {
     "walletlens": {
       "command": "npx",
-      "args": ["--yes", "@shawnwollenberg/walletlens-mcp@0.1.1"],
+      "args": ["--yes", "@shawnwollenberg/walletlens-mcp@0.1.2"],
       "env": {
         "WALLETLENS_X402_PRIVATE_KEY": "0xYOUR_DEDICATED_AGENT_PRIVATE_KEY",
         "WALLETLENS_MAX_PAYMENT_USDC": "0.02",
@@ -69,7 +69,7 @@ If a challenge violates the policy, the server refuses to sign it.
 ## Run directly
 
 ```bash
-npx --yes @shawnwollenberg/walletlens-mcp@0.1.1
+npx --yes @shawnwollenberg/walletlens-mcp@0.1.2
 ```
 
 The process communicates over MCP stdio and normally prints no human-readable output. Use `--help` or `--version` for CLI information.
@@ -79,4 +79,5 @@ The process communicates over MCP stdio and normally prints no human-readable ou
 - [WalletLens](https://walletlens.wallyweb.com)
 - [OpenAPI](https://walletlens.wallyweb.com/openapi.json)
 - [Agent documentation](https://walletlens.wallyweb.com/docs/walletlens-agent-skill.md)
+- [Official MCP Registry](https://registry.modelcontextprotocol.io/?search=io.github.shawnwollenberg%2Fwalletlens)
 - [Source repository](https://github.com/shawnwollenberg/web3_portfolio)

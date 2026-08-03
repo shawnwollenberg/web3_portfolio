@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>WalletLens — Paid x402 API for EVM Wallet Data</title>
-<meta name="description" content="WalletLens is a paid x402 API that returns EVM wallet reports, normalized portfolio snapshots, Base wallet lookup data, USDC transfer history, and enriched transaction history." />
-<meta property="og:title" content="WalletLens — Paid x402 API for EVM Wallet Data" />
-<meta property="og:description" content="EVM wallet reports, portfolio snapshots, and enriched transaction history. Pay $0.02 USDC per request via x402 on Base." />
+<title>WalletLens — EVM and Robinhood Stock Token Intelligence for Agents</title>
+<meta name="description" content="WalletLens gives agents normalized EVM wallet reports, canonical Robinhood Stock Token holdings and prices, and enriched transaction history through x402." />
+<meta property="og:title" content="WalletLens — Wallet Intelligence for Agents" />
+<meta property="og:description" content="EVM wallet reports and canonical Robinhood Stock Token intelligence, paid per request in USDC over x402." />
 <meta property="og:type" content="website" />
 <meta property="og:url" content="https://walletlens.wallyweb.com" />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='28' fill='%2300d4a4'/%3E%3Ccircle cx='32' cy='32' r='12' fill='%23061015'/%3E%3C/svg%3E" />
@@ -359,18 +359,19 @@
 
   <header class="hero">
     <span class="badge"><span class="pulse"></span>Live on Base · x402</span>
-    <h1>Normalized EVM wallet data,<br /><span class="grad">priced per request.</span></h1>
+    <h1>EVM wallet intelligence,<br /><span class="grad">including tokenized stocks.</span></h1>
     <p class="sub">
-      WalletLens is a paid HTTP API for agents. Pass an address, get a wallet report,
-      portfolio balances, Base USDC transfer history, or enriched transaction history across major EVM chains — settled
-      in USDC over <a href="https://www.x402.org/" target="_blank" rel="noopener">x402</a> for $0.02 a call.
+      Pass an address and get normalized holdings, recent activity, and canonical Robinhood Stock Token
+      prices, multipliers, and trading-halt metadata. Agents pay per request in Base USDC over
+      <a href="https://www.x402.org/" target="_blank" rel="noopener">x402</a>—no account or API key required.
     </p>
     <div class="cta-row">
       <a class="btn primary" href="/wallets-to-try">Try a wallet →</a>
       <a class="btn" href="/ask?q=analyze%20wallet%200x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea%20on%20base">Ask helper</a>
       <a class="btn" href="/analyze?address=0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea&chains=base">Analyze helper</a>
       <a class="btn" href="/openapi.json">OpenAPI</a>
-      <a class="btn" href="/preview">Preview JSON</a>
+      <a class="btn" href="/preview/robinhood">Robinhood preview</a>
+      <a class="btn" href="/preview">Base preview</a>
       <a class="btn" href="/.well-known/x402.json">x402 discovery</a>
     </div>
 
@@ -387,6 +388,9 @@ curl https://walletlens.wallyweb.com/.well-known/x402.json
 <span class="c"># Start from seeded wallet URLs</span>
 curl <span class="s">"https://walletlens.wallyweb.com/wallets-to-try?format=json"</span>
 curl <span class="s">"https://walletlens.wallyweb.com/ask?q=analyze%20wallet%200x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea%20on%20base"</span>
+
+<span class="c"># Inspect canonical Robinhood Stock Token output for free</span>
+curl <span class="s">"https://walletlens.wallyweb.com/preview/robinhood"</span>
 
 <span class="c"># Call a paid endpoint with an x402 client</span>
 curl <span class="s">"https://walletlens.wallyweb.com/portfolio?address=0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045&amp;chains=base,ethereum"</span>
@@ -462,6 +466,22 @@ curl <span class="s">"https://walletlens.wallyweb.com/wallet-report?address=0x52
       <div class="ep">
         <span class="method">GET</span>
         <div>
+          <div class="path">/preview/robinhood</div>
+          <div class="desc">Live proof of canonical Stock Token detection, prices, multipliers, and trading-halt metadata.</div>
+        </div>
+        <span class="price free">free</span>
+      </div>
+      <div class="ep">
+        <span class="method">GET</span>
+        <div>
+          <div class="path">/v2/x402/discovery/resources</div>
+          <div class="desc">Catalog-compatible listing of all WalletLens x402 resources for agent crawlers.</div>
+        </div>
+        <span class="price free">free</span>
+      </div>
+      <div class="ep">
+        <span class="method">GET</span>
+        <div>
           <div class="path">/.well-known/x402.json</div>
           <div class="desc">x402 discovery document for paid resources.</div>
         </div>
@@ -511,7 +531,11 @@ curl <span class="s">"https://walletlens.wallyweb.com/wallet-report?address=0x52
       </div>
       <div class="feat">
         <h3>MCP server included</h3>
-        <p>Local stdio MCP server exposes wallet portfolio and transaction history tools to agent clients.</p>
+        <p><code>io.github.shawnwollenberg/walletlens</code> exposes free discovery and paid wallet tools to MCP clients.</p>
+      </div>
+      <div class="feat">
+        <h3>Robinhood Stock Tokens</h3>
+        <p>Canonical asset matching, multiplier-adjusted midpoint values, trading capabilities, and halt status.</p>
       </div>
       <div class="feat">
         <h3>Powered by Alchemy</h3>
@@ -521,7 +545,7 @@ curl <span class="s">"https://walletlens.wallyweb.com/wallet-report?address=0x52
   </section>
 
   <footer>
-    <span>WalletLens · paid wallet portfolio API</span>
+    <span>WalletLens · wallet intelligence for agents</span>
     <span>
       <a href="/llms-full.txt">llms-full.txt</a> ·
       <a href="/wallets-to-try">wallets</a> ·

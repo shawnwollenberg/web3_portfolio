@@ -13,6 +13,7 @@ WalletLens provides machine-readable wallet intelligence for agents and automati
 - [Ask](https://walletlens.wallyweb.com/ask?q=analyze%20wallet%200x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea%20on%20base): Free intent helper that turns natural-language wallet requests into paid URLs.
 - [Analyze](https://walletlens.wallyweb.com/analyze?address=0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea&chains=base): Free structured intent helper for agents that already have an address.
 - [Preview](https://walletlens.wallyweb.com/preview): Free cached live demo wallet response and portfolio shape.
+- [Robinhood preview](https://walletlens.wallyweb.com/preview/robinhood): Free cached proof of canonical Stock Token pricing, USDG valuation, and halt metadata.
 - [Examples](https://walletlens.wallyweb.com/examples?format=json): Copy-paste calls for agents.
 - [Sample wallet report](https://walletlens.wallyweb.com/examples/wallet-report): Free static sample shaped like the paid `/wallet-report` response.
 - [Sample transaction history](https://walletlens.wallyweb.com/examples/tx-history): Free static sample shaped like the paid `/tx-history` response.
@@ -20,6 +21,8 @@ WalletLens provides machine-readable wallet intelligence for agents and automati
 - [Pricing](https://walletlens.wallyweb.com/pricing): Price, network, and payment details.
 - [x402 discovery](https://walletlens.wallyweb.com/.well-known/x402.json): Paid resource metadata.
 - [x402 discovery alias](https://walletlens.wallyweb.com/.well-known/x402): Same metadata for clients that omit `.json`.
+- [x402 resource catalog](https://walletlens.wallyweb.com/v2/x402/discovery/resources): Local catalog-compatible listing of WalletLens paid resources.
+- [API catalog](https://walletlens.wallyweb.com/.well-known/api-catalog): OpenAPI, x402, MCP, and flagship-resource links.
 - [OpenAPI](https://walletlens.wallyweb.com/openapi.json): Machine-readable API schema.
 - [Full LLM docs](https://walletlens.wallyweb.com/llms-full.txt): Complete agent usage guide.
 - [WalletLens agent skill](https://walletlens.wallyweb.com/docs/walletlens-agent-skill.md): Shareable instructions for agent clients.
@@ -55,7 +58,7 @@ Use `/wallet-report` when the agent needs one answer for "analyze this wallet", 
 
 For `chains=robinhood`, WalletLens identifies canonical Robinhood Stock Tokens and reports multiplier-adjusted midpoint USD values, bid/ask quotes, and trading-halt status. Base USDC remains the x402 payment asset.
 
-Agents with MCP support can run `npx --yes @shawnwollenberg/walletlens-mcp@0.1.1`.
+Agents with MCP support can run `npx --yes @shawnwollenberg/walletlens-mcp@0.1.2` or discover `io.github.shawnwollenberg/walletlens` in the official MCP Registry.
 Free MCP tools work without a wallet. Paid tools require a dedicated agent-wallet
 key in `WALLETLENS_X402_PRIVATE_KEY` and default to a maximum of 0.02 Base USDC
 paid only to the pinned WalletLens recipient.
