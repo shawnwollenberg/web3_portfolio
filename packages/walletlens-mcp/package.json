@@ -1,7 +1,7 @@
 {
   "name": "@shawnwollenberg/walletlens-mcp",
-  "version": "0.1.0",
-  "description": "MCP server for WalletLens EVM wallet intelligence and x402-paid reports.",
+  "version": "0.1.1",
+  "description": "MCP server for WalletLens EVM wallet intelligence, Robinhood Stock Tokens, and x402-paid reports.",
   "type": "module",
   "main": "dist/walletlens-mcp.js",
   "bin": {
@@ -35,6 +35,8 @@
     "web3",
     "wallet",
     "base",
+    "robinhood",
+    "stock-tokens",
     "usdc",
     "agents"
   ],

@@ -8,7 +8,7 @@ export const portfolioInputSchema = {
     chains: {
       type: "string",
       default: "base,ethereum",
-      description: "Comma-separated supported chain slugs."
+      description: "Comma-separated supported chain slugs, including robinhood for Robinhood Chain mainnet."
     }
   },
   required: ["address"],
@@ -70,7 +70,56 @@ export const portfolioOutputSchema = {
         "warnings"
       ]
     },
-    tokens: { type: "array", items: { type: "object" } },
+    tokens: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          chain: { type: "string" },
+          chainId: { type: "string" },
+          contract: { type: ["string", "null"] },
+          symbol: { type: ["string", "null"] },
+          name: { type: ["string", "null"] },
+          decimals: { type: ["integer", "null"] },
+          logo: { type: ["string", "null"] },
+          rawBalance: { type: "string" },
+          balance: { type: ["string", "null"] },
+          priceUsd: { type: ["string", "null"] },
+          valueUsd: { type: ["string", "null"] },
+          assetType: { type: "string", enum: ["stock_token", "canonical_stablecoin"] },
+          stockToken: {
+            type: "object",
+            properties: {
+              canonical: { type: "boolean", const: true },
+              uid: { type: "string" },
+              underlyingSymbol: { type: "string" },
+              multiplier: { type: "string" },
+              bidUsd: { type: ["string", "null"] },
+              askUsd: { type: ["string", "null"] },
+              priceMethod: { type: ["string", "null"] },
+              priceGeneratedAt: { type: ["string", "null"] },
+              dailyTradingVolume: { type: ["string", "null"] },
+              tradingHalt: { type: "boolean" },
+              status: { type: "string" },
+              tradingCapabilities: { type: ["object", "null"] }
+            }
+          }
+        },
+        required: [
+          "chain",
+          "chainId",
+          "contract",
+          "symbol",
+          "name",
+          "decimals",
+          "logo",
+          "rawBalance",
+          "balance",
+          "priceUsd",
+          "valueUsd"
+        ]
+      }
+    },
     positions: { type: "array", items: {} },
     recentActivity: { type: "array", items: { type: "object" } },
     provider: { type: "string", const: "alchemy" }
@@ -79,39 +128,67 @@ export const portfolioOutputSchema = {
 } as const;
 
 export const portfolioExample = {
-  address: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
-  timestamp: "2026-05-17T00:00:00.000Z",
-  chains: ["base", "ethereum"],
+  address: "0xfac1d7dC76bE90C5Cadd5B022af7838dd8190F16",
+  timestamp: "2026-08-03T00:00:00.000Z",
+  chains: ["robinhood"],
   summary: {
-    totalValueUsd: "1234.56",
-    pricedTokenCount: 8,
-    unpricedTokenCount: 2,
-    tokenCount: 10,
-    stablecoinValueUsd: "125.50",
+    totalValueUsd: "961.15",
+    pricedTokenCount: 1,
+    unpricedTokenCount: 0,
+    tokenCount: 1,
+    stablecoinValueUsd: null,
     chains: [
       {
-        chain: "base",
-        tokenCount: 4,
-        pricedTokenCount: 3,
-        unpricedTokenCount: 1,
-        totalValueUsd: "456.78"
+        chain: "robinhood",
+        tokenCount: 1,
+        pricedTokenCount: 1,
+        unpricedTokenCount: 0,
+        totalValueUsd: "961.15"
       }
     ],
     topHoldings: [
       {
-        chain: "ethereum",
-        contract: null,
-        symbol: "ETH",
-        name: "Ether",
-        valueUsd: "1000.00"
+        chain: "robinhood",
+        contract: "0x1Cdad396DB64BDa184d5182A97Dd9B3C62100b7D",
+        symbol: "P",
+        name: "Everpure • Robinhood Token",
+        valueUsd: "961.148033"
       }
     ],
     warnings: [
-      "2 tokens are missing USD prices",
-      "Stablecoin totals are symbol-based and may include unverified token contracts."
+      "Robinhood Stock Token USD values use midpoint bid/ask prices multiplied by Robinhood's current corporate-action multiplier."
     ]
   },
-  tokens: [],
+  tokens: [
+    {
+      chain: "robinhood",
+      chainId: "eip155:4663",
+      contract: "0x1Cdad396DB64BDa184d5182A97Dd9B3C62100b7D",
+      symbol: "P",
+      name: "Everpure • Robinhood Token",
+      decimals: 18,
+      logo: "https://cdn.robinhood.com/ncw_assets/logos/0x1cdad396db64bda184d5182a97dd9b3c62100b7d.png",
+      rawBalance: "12351719286313737501",
+      balance: "12.351719286313737501",
+      priceUsd: "77.815",
+      valueUsd: "961.148033",
+      assetType: "stock_token",
+      stockToken: {
+        canonical: true,
+        uid: "0x0000000000000000000000000000000002c4d1ce31ec4310b2c507c921a52b70",
+        underlyingSymbol: "P",
+        multiplier: "1.000000000000000000",
+        bidUsd: "76.00",
+        askUsd: "79.63",
+        priceMethod: "midpoint_multiplier_adjusted",
+        priceGeneratedAt: "2026-08-03T00:00:00.000Z",
+        dailyTradingVolume: "1971877",
+        tradingHalt: false,
+        status: "ASSET_STATUS_ACTIVE",
+        tradingCapabilities: null
+      }
+    }
+  ],
   positions: [],
   recentActivity: [],
   provider: "alchemy"
@@ -127,7 +204,7 @@ export const txHistoryInputSchema = {
     chains: {
       type: "string",
       default: "base,ethereum",
-      description: "Comma-separated supported chain slugs."
+      description: "Comma-separated supported chain slugs, including robinhood for Robinhood Chain mainnet."
     },
     limit: {
       type: "integer",
@@ -266,7 +343,7 @@ export const walletReportInputSchema = {
     chains: {
       type: "string",
       default: "base,ethereum",
-      description: "Comma-separated supported chain slugs used for both portfolio and transaction history."
+      description: "Comma-separated supported chain slugs used for both portfolio and transaction history, including robinhood."
     },
     limit: {
       type: "integer",

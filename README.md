@@ -1,6 +1,6 @@
 # WalletLens API
 
-Paid API for EVM wallet intelligence: normalized portfolio snapshots, bundled wallet reports, and TxLens enriched transaction history. The app uses Alchemy APIs for token balances, prices, recent activity, and transfers, then gates paid endpoints with x402 unless local dev bypass is enabled.
+Paid API for EVM wallet intelligence: normalized portfolio snapshots, canonical Robinhood Stock Token holdings and prices, bundled wallet reports, and TxLens enriched transaction history. The app uses Alchemy plus Robinhood's public Stock Token APIs, then gates paid endpoints with x402 unless local dev bypass is enabled.
 
 ## Secret Setup
 
@@ -60,6 +60,12 @@ Bundled wallet report request:
 
 ```bash
 curl "http://localhost:3000/wallet-report?address=0x0000000000000000000000000000000000000000&chains=base&limit=20"
+```
+
+Robinhood Stock Token report:
+
+```bash
+curl "http://localhost:3000/wallet-report?address=0xfac1d7dC76bE90C5Cadd5B022af7838dd8190F16&chains=robinhood&limit=20"
 ```
 
 Discovery:
@@ -140,7 +146,7 @@ https://www.npmjs.com/package/@shawnwollenberg/walletlens-mcp
 Run the published package without cloning this repository:
 
 ```bash
-npx --yes @shawnwollenberg/walletlens-mcp@0.1.0
+npx --yes @shawnwollenberg/walletlens-mcp@0.1.1
 ```
 
 Repository contributors can run the same server from source with `npm run mcp`.
@@ -168,7 +174,7 @@ Example MCP client configuration:
   "mcpServers": {
     "walletlens": {
       "command": "npx",
-      "args": ["--yes", "@shawnwollenberg/walletlens-mcp@0.1.0"],
+      "args": ["--yes", "@shawnwollenberg/walletlens-mcp@0.1.1"],
       "env": {
         "WALLETLENS_X402_PRIVATE_KEY": "0xYOUR_DEDICATED_AGENT_PRIVATE_KEY",
         "WALLETLENS_MAX_PAYMENT_USDC": "0.02",
@@ -250,5 +256,8 @@ Initial EVM support:
 - `optimism`
 - `arbitrum`
 - `polygon`
+- `robinhood` or `robinhood-chain` (Robinhood Chain mainnet, `eip155:4663`)
+
+Robinhood Stock Tokens are matched against Robinhood's canonical asset registry. WalletLens reports the current corporate-action multiplier, bid/ask quote, multiplier-adjusted midpoint value, trading-halt status, and available trading capabilities. Canonical Robinhood Chain USDG is valued at its $1 reference price. Base USDC remains the x402 payment asset regardless of the report target chain.
 
 Solana is intentionally out of scope for the first version.

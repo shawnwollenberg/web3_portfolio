@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "WalletLens API",
-    "version": "1.0.0",
-    "description": "Paid x402 API for EVM wallet reports, normalized portfolio snapshots, and enriched transaction history."
+    "version": "1.1.0",
+    "description": "Paid x402 API for EVM wallet reports, normalized portfolio snapshots, canonical Robinhood Stock Token enrichment, and enriched transaction history."
   },
   "servers": [
     {
@@ -154,7 +154,7 @@
             "schema": {
               "type": "string",
               "default": "base",
-              "examples": ["base", "base,ethereum"]
+              "examples": ["base", "base,ethereum", "robinhood"]
             }
           }
         ],
@@ -374,7 +374,7 @@
     "/portfolio": {
       "get": {
         "summary": "Get a normalized wallet portfolio snapshot",
-        "description": "Requires x402 payment. Use this endpoint when the user asks for EVM token balances, wallet holdings, stablecoin totals, top holdings, or a normalized portfolio snapshot. Unpaid requests with a valid address return HTTP 402 with a payment-required header. If you do not have an address yet, call /ask or /analyze first.",
+        "description": "Requires x402 payment. Use this endpoint when the user asks for EVM token balances, wallet holdings, stablecoin totals, top holdings, canonical Robinhood Stock Tokens, or a normalized portfolio snapshot. Unpaid requests with a valid address return HTTP 402 with a payment-required header. If you do not have an address yet, call /ask or /analyze first.",
         "parameters": [
           {
             "name": "address",
@@ -394,7 +394,7 @@
             "schema": {
               "type": "string",
               "default": "base,ethereum",
-              "examples": ["base", "base,ethereum", "base,ethereum,arbitrum,optimism,polygon"]
+              "examples": ["base", "base,ethereum", "base,ethereum,arbitrum,optimism,polygon", "robinhood"]
             },
             "description": "Comma-separated supported chain slugs."
           }
@@ -463,7 +463,7 @@
             "schema": {
               "type": "string",
               "default": "base,ethereum",
-              "examples": ["base", "base,ethereum"]
+              "examples": ["base", "base,ethereum", "robinhood"]
             },
             "description": "Comma-separated supported chain slugs."
           },
@@ -537,7 +537,7 @@
     "/wallet-report": {
       "get": {
         "summary": "Get a bundled wallet report",
-        "description": "Requires x402 payment. Use this endpoint for broad user intents such as analyze this wallet, summarize this Base wallet, explain this onchain wallet activity, get portfolio and transaction history, show top holdings and counterparties, or inspect recent USDC transfers. Returns normalized EVM portfolio balances plus TxLens transaction history, top holdings, counterparties, transfer summaries, and wallet activity statistics in one agent-friendly response. If unsure which paid endpoint to choose, use /wallet-report.",
+        "description": "Requires x402 payment. Use this endpoint for broad user intents such as analyze this wallet, summarize this Base or Robinhood Chain wallet, explain this onchain wallet activity, get portfolio and transaction history, show top holdings and counterparties, inspect canonical Robinhood Stock Tokens, or inspect recent USDC transfers. Returns normalized EVM portfolio balances plus TxLens transaction history, top holdings, counterparties, transfer summaries, and wallet activity statistics in one agent-friendly response. If unsure which paid endpoint to choose, use /wallet-report.",
         "parameters": [
           {
             "name": "address",
@@ -557,7 +557,7 @@
             "schema": {
               "type": "string",
               "default": "base,ethereum",
-              "examples": ["base", "base,ethereum"]
+              "examples": ["base", "base,ethereum", "robinhood"]
             },
             "description": "Comma-separated supported chain slugs."
           },
@@ -903,7 +903,30 @@
           "rawBalance": { "type": "string" },
           "balance": { "type": ["string", "null"] },
           "priceUsd": { "type": ["string", "null"] },
-          "valueUsd": { "type": ["string", "null"] }
+          "valueUsd": { "type": ["string", "null"] },
+          "assetType": {
+            "type": "string",
+            "enum": ["stock_token", "canonical_stablecoin"]
+          },
+          "stockToken": {
+            "type": "object",
+            "description": "Present only for contracts matched to Robinhood's canonical chain-4663 Stock Token registry.",
+            "properties": {
+              "canonical": { "type": "boolean", "const": true },
+              "uid": { "type": "string" },
+              "underlyingSymbol": { "type": "string" },
+              "multiplier": { "type": "string" },
+              "bidUsd": { "type": ["string", "null"] },
+              "askUsd": { "type": ["string", "null"] },
+              "priceMethod": { "type": ["string", "null"], "enum": ["midpoint_multiplier_adjusted", null] },
+              "priceGeneratedAt": { "type": ["string", "null"], "format": "date-time" },
+              "dailyTradingVolume": { "type": ["string", "null"] },
+              "tradingHalt": { "type": "boolean" },
+              "status": { "type": "string" },
+              "tradingCapabilities": { "type": ["object", "null"] }
+            },
+            "required": ["canonical", "uid", "underlyingSymbol", "multiplier", "bidUsd", "askUsd", "priceMethod", "priceGeneratedAt", "dailyTradingVolume", "tradingHalt", "status", "tradingCapabilities"]
+          }
         },
         "required": ["chain", "chainId", "contract", "symbol", "name", "decimals", "logo", "rawBalance", "balance", "priceUsd", "valueUsd"]
       },

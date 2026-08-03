@@ -1,6 +1,6 @@
 # WalletLens API
 
-> Paid x402 API for EVM wallet portfolio snapshots, wallet reports, and enriched transaction history.
+> Paid x402 API for EVM wallet portfolios, canonical Robinhood Stock Tokens, wallet reports, and enriched transaction history.
 
 WalletLens provides machine-readable wallet intelligence for agents and automation. It returns normalized token balances, native balances, USD prices where available, top holdings, stablecoin totals, Base wallet lookup data, USDC transfer history, normalized transfer summaries, counterparties, and TxLens transaction history across supported EVM chains. Paid endpoints use x402 over HTTP 402 Payment Required.
 
@@ -45,6 +45,7 @@ WalletLens provides machine-readable wallet intelligence for agents and automati
 - `optimism`
 - `arbitrum`
 - `polygon`
+- `robinhood` (Robinhood Chain mainnet, `eip155:4663`)
 
 ## Notes For Agents
 
@@ -52,7 +53,9 @@ Start with `/discover`, `/wallets-to-try`, `/ask`, `/analyze`, `/.well-known/x40
 
 Use `/wallet-report` when the agent needs one answer for "analyze this wallet", "summarize this Base wallet", "get EVM wallet portfolio and transaction history", "find recent USDC transfers", or "explain this onchain wallet activity".
 
-Agents with MCP support can run `npx --yes @shawnwollenberg/walletlens-mcp@0.1.0`.
+For `chains=robinhood`, WalletLens identifies canonical Robinhood Stock Tokens and reports multiplier-adjusted midpoint USD values, bid/ask quotes, and trading-halt status. Base USDC remains the x402 payment asset.
+
+Agents with MCP support can run `npx --yes @shawnwollenberg/walletlens-mcp@0.1.1`.
 Free MCP tools work without a wallet. Paid tools require a dedicated agent-wallet
 key in `WALLETLENS_X402_PRIVATE_KEY` and default to a maximum of 0.02 Base USDC
 paid only to the pinned WalletLens recipient.

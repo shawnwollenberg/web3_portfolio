@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { AssetTransfersCategory } from "alchemy-sdk";
+import { AssetTransfersCategory } from "../src/alchemy.js";
 import { categorizeTransaction, isTimestampWithinLookback } from "../src/tx-history.js";
 
 describe("categorizeTransaction", () => {

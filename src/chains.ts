@@ -1,48 +1,78 @@
-import { Network } from "alchemy-sdk";
+export type AlchemyNetworkId =
+  | "eth-mainnet"
+  | "base-mainnet"
+  | "opt-mainnet"
+  | "arb-mainnet"
+  | "polygon-mainnet"
+  | "robinhood-mainnet";
 
 export type SupportedChain = {
   slug: string;
   label: string;
-  alchemyNetwork: Network;
+  alchemyNetwork: AlchemyNetworkId;
   caip2: string;
+  supportsInternalTransfers?: boolean;
 };
+
+export const supportedChainSlugs = ["base", "ethereum", "optimism", "arbitrum", "polygon", "robinhood"] as const;
 
 export const supportedChains: Record<string, SupportedChain> = {
   ethereum: {
     slug: "ethereum",
     label: "Ethereum",
-    alchemyNetwork: Network.ETH_MAINNET,
+    alchemyNetwork: "eth-mainnet",
     caip2: "eip155:1"
   },
   eth: {
     slug: "ethereum",
     label: "Ethereum",
-    alchemyNetwork: Network.ETH_MAINNET,
+    alchemyNetwork: "eth-mainnet",
     caip2: "eip155:1"
   },
   base: {
     slug: "base",
     label: "Base",
-    alchemyNetwork: Network.BASE_MAINNET,
+    alchemyNetwork: "base-mainnet",
     caip2: "eip155:8453"
   },
   optimism: {
     slug: "optimism",
     label: "Optimism",
-    alchemyNetwork: Network.OPT_MAINNET,
+    alchemyNetwork: "opt-mainnet",
     caip2: "eip155:10"
   },
   arbitrum: {
     slug: "arbitrum",
     label: "Arbitrum One",
-    alchemyNetwork: Network.ARB_MAINNET,
+    alchemyNetwork: "arb-mainnet",
     caip2: "eip155:42161"
   },
   polygon: {
     slug: "polygon",
     label: "Polygon",
-    alchemyNetwork: Network.MATIC_MAINNET,
+    alchemyNetwork: "polygon-mainnet",
     caip2: "eip155:137"
+  },
+  robinhood: {
+    slug: "robinhood",
+    label: "Robinhood Chain",
+    alchemyNetwork: "robinhood-mainnet",
+    caip2: "eip155:4663",
+    supportsInternalTransfers: false
+  },
+  "robinhood-chain": {
+    slug: "robinhood",
+    label: "Robinhood Chain",
+    alchemyNetwork: "robinhood-mainnet",
+    caip2: "eip155:4663",
+    supportsInternalTransfers: false
+  },
+  rh: {
+    slug: "robinhood",
+    label: "Robinhood Chain",
+    alchemyNetwork: "robinhood-mainnet",
+    caip2: "eip155:4663",
+    supportsInternalTransfers: false
   }
 };
 
@@ -62,10 +92,9 @@ export function parseChains(input?: string): SupportedChain[] {
     unique.set(chain.slug, chain);
   }
 
-  return [...unique.values()].slice(0, 5);
+  return [...unique.values()].slice(0, supportedChainSlugs.length);
 }
 
-export function networkToChain(network: Network): SupportedChain | undefined {
+export function networkToChain(network: string): SupportedChain | undefined {
   return Object.values(supportedChains).find(chain => chain.alchemyNetwork === network);
 }
-
