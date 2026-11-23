@@ -3,6 +3,7 @@ import type { AddressInfo } from "node:net";
 import { after, before, describe, it } from "node:test";
 import type { Server } from "node:http";
 import { createApp } from "../src/app.js";
+import { CDP_RESOURCE_DESCRIPTION_MAX } from "../src/x402.js";
 
 const address = "0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea";
 let server: Server;
@@ -84,6 +85,31 @@ describe("agent request validation", () => {
     assert.match(prices.get("/tx-history")?.description ?? "", /\/wallet-report/);
     assert.match(prices.get("/wallet-report")?.description ?? "", /\$0\.02/);
     assert.match(prices.get("/wallet-report")?.description ?? "", /Robinhood Stock Token/);
+  });
+
+  it("keeps every 402 resource description inside the CDP verify limit", async () => {
+    assert.ok(CDP_RESOURCE_DESCRIPTION_MAX <= 500);
+
+    for (const path of ["/portfolio", "/tx-history", "/wallet-report"]) {
+      const response = await fetch(`${baseUrl}${path}?address=${address}&chains=base&limit=1`);
+      assert.equal(response.status, 402);
+      const header = response.headers.get("payment-required");
+      assert.ok(header);
+      const challenge = JSON.parse(Buffer.from(header, "base64url").toString("utf8")) as {
+        resource?: { description?: string; url?: string; mimeType?: string };
+        accepts?: Array<{ payTo?: string; asset?: string }>;
+      };
+      const description = challenge.resource?.description ?? "";
+      assert.ok(description.length > 0, `${path} description is empty`);
+      assert.ok(
+        description.length <= CDP_RESOURCE_DESCRIPTION_MAX,
+        `${path} resource.description is ${description.length} characters; CDP rejects verify above 500`
+      );
+      assert.equal(challenge.resource?.mimeType, "application/json");
+      assert.ok((challenge.resource?.url ?? "").length <= 2048);
+      assert.ok((challenge.accepts?.[0]?.payTo ?? "").length <= 128);
+      assert.ok((challenge.accepts?.[0]?.asset ?? "").length <= 128);
+    }
   });
 
   it("routes combined portfolio and transaction intent to the wallet report", async () => {

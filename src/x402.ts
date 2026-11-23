@@ -23,14 +23,21 @@ const portfolioPrice = config.x402PortfolioPriceUsd;
 const txHistoryPrice = config.x402TxHistoryPriceUsd;
 const walletReportPrice = config.x402WalletReportPriceUsd;
 
+// CDP's x402V2PaymentPayload.resource.description is Description, maxLength 500
+// (JavaScript characters, not bytes). Clients echo this string into verify and
+// settle, and 501 characters fails the whole payload. Stay under 450 so a
+// longer configured price cannot cross the limit. Field-level input and output
+// detail stays in the Bazaar schemas, OpenAPI, and llms.txt.
+export const CDP_RESOURCE_DESCRIPTION_MAX = 450;
+
 const portfolioDescription =
-  `$${portfolioPrice} USDC per call on Base (eip155:8453). WalletLens /portfolio identifies canonical Robinhood Stock Tokens on Robinhood Chain (eip155:4663): multiplier-adjusted midpoint USD price, bid, ask, corporate-action multiplier, and trading-halt status, plus normalized EVM balances, native ETH, stablecoin totals, and top holdings. Query: address (required, 0x plus 40 hex), chains (optional; default base,ethereum; use robinhood for Stock Tokens). Response: summary.totalValueUsd, summary.stablecoinValueUsd, summary.topHoldings, tokens[].stockToken. For holdings and decoded transfers in one response, call GET /wallet-report ($${walletReportPrice}).`;
+  `$${portfolioPrice} USDC per call on Base (eip155:8453). Canonical Robinhood Stock Tokens: multiplier-adjusted USD price, bid/ask, and trading-halt status, plus normalized EVM holdings. Query: address, chains (use robinhood). Holdings plus transfers: GET /wallet-report ($${walletReportPrice}).`;
 
 const txHistoryDescription =
-  `$${txHistoryPrice} USDC per call on Base (eip155:8453). TxLens /tx-history returns normalized transfer history for Base, Ethereum, Optimism, Arbitrum, Polygon, and Robinhood Chain, with direction, counterparty, category, decoded summary, labels, and data-quality warnings. Query: address (required, 0x plus 40 hex), chains, limit (1-100), days (1-365), category (all, external, internal, erc20, erc721, erc1155). Response: summary.directions, summary.actions, transactions[].direction, transactions[].counterparty, transactions[].decoded.summary. For the same history bundled with portfolio balances and Robinhood Stock Token pricing, call GET /wallet-report ($${walletReportPrice}).`;
+  `$${txHistoryPrice} USDC per call on Base (eip155:8453). Normalized transfer history for Base, Ethereum, and Robinhood Chain: direction, counterparty, category, and decoded summaries. Query: address, chains, limit, days, category. Portfolio plus this history: GET /wallet-report ($${walletReportPrice}).`;
 
 const walletReportDescription =
-  `$${walletReportPrice} USDC per call on Base (eip155:8453). WalletLens /wallet-report is the bundled call: the $${portfolioPrice} /portfolio snapshot plus the $${txHistoryPrice} /tx-history feed, including canonical Robinhood Stock Token pricing and trading-halt status when chains includes robinhood. Query: address (required, 0x plus 40 hex), chains, limit (1-100), days (1-365), category (all, external, internal, erc20, erc721, erc1155). Response: summary.totalValueUsd, summary.topHoldings, summary.transactionCount, portfolio, txHistory. Use /portfolio or /tx-history at $${portfolioPrice} when only one section is needed.`;
+  `$${walletReportPrice} USDC per call on Base (eip155:8453). Bundles the $${portfolioPrice} portfolio snapshot and $${txHistoryPrice} transfer history, including canonical Robinhood Stock Token prices and trading-halt status. Query: address, chains, limit, days, category.`;
 
 export const paymentRouteConfig = {
   "GET /portfolio": paidRoute("/portfolio", portfolioPrice, portfolioDescription, {
@@ -100,6 +107,12 @@ function paidRoute(
   description: string,
   discovery: Parameters<typeof declareDiscoveryExtension>[0]
 ) {
+  if (description.length > CDP_RESOURCE_DESCRIPTION_MAX) {
+    throw new Error(
+      `${path} resource.description is ${description.length} characters. CDP rejects verify and settle when it exceeds 500; keep it at or below ${CDP_RESOURCE_DESCRIPTION_MAX}.`
+    );
+  }
+
   return {
     accepts: {
       scheme: "exact" as const,
