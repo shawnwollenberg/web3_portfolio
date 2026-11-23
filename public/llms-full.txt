@@ -61,7 +61,7 @@ npx --yes @shawnwollenberg/walletlens-mcp@0.1.2
 
 The free MCP tools work without a wallet. Paid tools require
 `WALLETLENS_X402_PRIVATE_KEY` for a dedicated, low-balance agent wallet. The
-package defaults to a 0.02 USDC per-call ceiling and validates the exact scheme,
+package defaults to a 0.02 USDC per-call ceiling, which covers `/wallet-report`. `/portfolio` and `/tx-history` cost 0.005 USDC. It validates the exact scheme,
 Base mainnet network, Base USDC asset, WalletLens resource origin and path, and
 the pinned WalletLens recipient before signing. Each paid invocation makes at
 most one payment attempt.
@@ -80,8 +80,12 @@ Payment details:
 - Network: `eip155:8453`
 - Chain: Base mainnet
 - Asset: USDC
-- Price: `$0.02`
+- Facilitator: Coinbase CDP, `https://api.cdp.coinbase.com/platform/v2/x402`
+- `GET /portfolio`: `$0.005`
+- `GET /tx-history`: `$0.005`
+- `GET /wallet-report`: `$0.02`
 - Expected unpaid response: HTTP `402` with a `payment-required` header
+- Provider failures return JSON. `code` is `provider_error` (HTTP 502) or `provider_timeout` (HTTP 504). Invalid JSON bodies return HTTP 400 with `code` `invalid_json`. Unknown routes return HTTP 404 with `code` `not_found`.
 
 Agent flow:
 
@@ -97,7 +101,7 @@ Missing or invalid `address` returns HTTP `400` before payment negotiation. A va
 
 ## Endpoint: GET /portfolio
 
-Returns a normalized EVM wallet portfolio snapshot.
+Returns a normalized EVM wallet portfolio snapshot for `$0.005` USDC. This is the endpoint that labels canonical Robinhood Stock Tokens. Use `GET /wallet-report` at `$0.02` when the same call also needs transfer history.
 
 Query parameters:
 
@@ -124,7 +128,7 @@ curl -i "https://walletlens.wallyweb.com/portfolio?address=0xd8dA6BF26964aF9D7eE
 
 ## Endpoint: GET /tx-history
 
-Returns TxLens enriched EVM transaction history.
+Returns TxLens enriched EVM transaction history for `$0.005` USDC. Use `GET /wallet-report` at `$0.02` when the same call also needs the portfolio snapshot and Robinhood Stock Token pricing.
 
 Query parameters:
 
@@ -150,7 +154,7 @@ The paid response includes:
 
 ## Endpoint: GET /wallet-report
 
-Returns a bundled wallet report for agents that need one paid call for portfolio plus transaction history.
+Returns a bundled wallet report for `$0.02` USDC. One call includes the `/portfolio` snapshot and the `/tx-history` feed, including canonical Robinhood Stock Token pricing when `chains` includes `robinhood`.
 
 Query parameters:
 

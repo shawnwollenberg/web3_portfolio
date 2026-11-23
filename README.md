@@ -104,7 +104,7 @@ X402_TEST_DAYS=30
 X402_TEST_CATEGORY=all
 ```
 
-The payer wallet needs Base USDC for the `$0.02` x402 payment.
+The payer wallet needs Base USDC for the route price: `$0.005` for `/portfolio` and `/tx-history`, `$0.02` for `/wallet-report`. The script sends a real payment. Do not run it just to inspect a 402.
 
 Run:
 
@@ -163,8 +163,9 @@ low-balance agent wallet in the MCP server environment:
 WALLETLENS_X402_PRIVATE_KEY=0x...
 ```
 
-The MCP client defaults to a maximum payment of `$0.02` and accepts only exact
-Base-mainnet USDC requirements for the requested WalletLens endpoint. It also
+The MCP client defaults to a maximum payment of `$0.02`, which covers
+`/wallet-report`. `/portfolio` and `/tx-history` are `$0.005`. It accepts only
+exact Base-mainnet USDC requirements for the requested WalletLens endpoint and
 pins the live WalletLens recipient by default:
 
 ```bash
@@ -210,7 +211,9 @@ Set `.env` for production before deploying:
 ALCHEMY_API_KEY=your_alchemy_key
 MY_WALLET_ADDRESS=0xYourReceivingWallet
 X402_DEV_BYPASS=false
-X402_PRICE_USD=0.02
+X402_PORTFOLIO_PRICE_USD=0.005
+X402_TX_HISTORY_PRICE_USD=0.005
+X402_WALLET_REPORT_PRICE_USD=0.02
 X402_NETWORK=eip155:8453
 X402_FACILITATOR_URL=https://api.cdp.coinbase.com/platform/v2/x402
 CDP_API_KEY_ID=your_cdp_key_id
@@ -255,6 +258,30 @@ The public production URL is:
 ```text
 https://walletlens.wallyweb.com
 ```
+
+## x402 Bazaar
+
+Coinbase indexes a route only after the CDP facilitator settles a payment for it. A valid HTTP 402 is not enough, and resources with no settled activity for 30 days drop out of discovery. WalletLens settles on Base mainnet (`eip155:8453`) through `https://api.cdp.coinbase.com/platform/v2/x402`.
+
+After deploy, confirm the live configuration without paying:
+
+```bash
+curl https://walletlens.wallyweb.com/status
+```
+
+`payment.facilitator` should be `coinbase-cdp`, `payment.network` should be `eip155:8453`, and `payment.bazaarEligible` should be `true`. `payment.cdpAuthConfigured` reports whether both CDP key variables are present. It does not return the secret.
+
+To create the listing, send one real settled payment to each paid route from a Base wallet that holds a little USDC. `npm run test:x402` does that against production, so run it only when you intend to pay:
+
+```bash
+npm run test:x402 -- --endpoint portfolio --address 0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea --chains base
+npm run test:x402 -- --endpoint tx-history --address 0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea --chains base --limit 1
+npm run test:x402 -- --endpoint wallet-report --address 0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea --chains base --limit 1
+```
+
+Each successful call settles through CDP. The buyer client copies `paymentPayload.resource` and `extensions.bazaar` from the 402 into that settle. In CloudWatch, the facilitator extension response for `bazaar` should be `processing`. Catalog updates can take about 10 minutes. Then run `npm run check:discovery`. Repeat a settled call within 30 days to keep each route listed.
+
+`X402_PRICE_USD` is ignored. Deploy fails while `X402_DEV_BYPASS` is false if the facilitator URL is not a `cdp.coinbase.com` host or the CDP key id and secret are missing.
 
 ## Supported Chains
 

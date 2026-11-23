@@ -25,7 +25,7 @@
           "name": "WALLETLENS_X402_PRIVATE_KEY"
         },
         {
-          "description": "Maximum USDC allowed for one report. Defaults to 0.02.",
+          "description": "Maximum USDC allowed for one call. Defaults to 0.02, which covers /wallet-report. /portfolio and /tx-history are 0.005.",
           "isRequired": false,
           "format": "string",
           "isSecret": false,

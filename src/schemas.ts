@@ -1,4 +1,6 @@
 export const portfolioInputSchema = {
+  description:
+    "Query parameters for GET /portfolio. Price is $0.005 USDC per call, settled on Base (eip155:8453). Set chains=robinhood to receive canonical Robinhood Stock Token pricing. For portfolio plus transfer history, use GET /wallet-report at $0.02.",
   properties: {
     address: {
       type: "string",
@@ -8,7 +10,8 @@ export const portfolioInputSchema = {
     chains: {
       type: "string",
       default: "base,ethereum",
-      description: "Comma-separated supported chain slugs, including robinhood for Robinhood Chain mainnet."
+      description:
+        "Comma-separated chain slugs. Include robinhood to label canonical Robinhood Stock Tokens with multiplier-adjusted USD prices and trading-halt status."
     }
   },
   required: ["address"],
@@ -17,6 +20,8 @@ export const portfolioInputSchema = {
 
 export const portfolioOutputSchema = {
   type: "object",
+  description:
+    "Normalized portfolio snapshot. summary.totalValueUsd, summary.stablecoinValueUsd, and summary.topHoldings are the agent-facing totals. tokens[].stockToken is present for canonical Robinhood Stock Tokens and includes bidUsd, askUsd, multiplier, and tradingHalt.",
   properties: {
     address: { type: "string" },
     timestamp: { type: "string", description: "ISO 8601 date-time." },
@@ -195,6 +200,8 @@ export const portfolioExample = {
 } as const;
 
 export const txHistoryInputSchema = {
+  description:
+    "Query parameters for GET /tx-history. Price is $0.005 USDC per call, settled on Base (eip155:8453). For this history plus portfolio balances and Robinhood Stock Token pricing, use GET /wallet-report at $0.02.",
   properties: {
     address: {
       type: "string",
@@ -233,12 +240,62 @@ export const txHistoryInputSchema = {
 
 export const txHistoryOutputSchema = {
   type: "object",
+  description:
+    "TxLens transfer history. summary.directions counts in, out, self, and unknown. Each transactions[] row has direction, counterparty, category, decoded.summary, labels, and riskFlags.",
   properties: {
     address: { type: "string" },
     timestamp: { type: "string", description: "ISO 8601 date-time." },
     chains: { type: "array", items: { type: "string" } },
-    request: { type: "object" },
-    summary: { type: "object" },
+    request: {
+      type: "object",
+      properties: {
+        limit: { type: "integer" },
+        days: { type: "integer" },
+        category: { type: "string" }
+      },
+      required: ["limit", "days", "category"]
+    },
+    summary: {
+      type: "object",
+      properties: {
+        transactionCount: { type: "integer" },
+        chains: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              chain: { type: "string" },
+              transactionCount: { type: "integer" }
+            },
+            required: ["chain", "transactionCount"]
+          }
+        },
+        directions: {
+          type: "object",
+          properties: {
+            in: { type: "integer" },
+            out: { type: "integer" },
+            self: { type: "integer" },
+            unknown: { type: "integer" }
+          },
+          required: ["in", "out", "self", "unknown"]
+        },
+        actions: { type: "object", additionalProperties: { type: "integer" } },
+        assets: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              asset: { type: "string" },
+              count: { type: "integer" }
+            },
+            required: ["asset", "count"]
+          }
+        },
+        warnings: { type: "array", items: { type: "string" } }
+      },
+      required: ["transactionCount", "chains", "directions", "actions", "assets", "warnings"]
+    },
     transactions: {
       type: "array",
       items: {
@@ -265,10 +322,28 @@ export const txHistoryOutputSchema = {
           decoded: { type: "object" },
           labels: { type: "array", items: { type: "string" } },
           riskFlags: { type: "array", items: { type: "string" } }
-        }
+        },
+        required: ["chain", "hash", "direction", "category", "type", "decoded", "labels"]
       }
     },
-    pagination: { type: "object" },
+    pagination: {
+      type: "object",
+      properties: {
+        pageKeys: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              chain: { type: "string" },
+              direction: { type: "string", enum: ["in", "out"] },
+              pageKey: { type: "string" }
+            },
+            required: ["chain", "direction", "pageKey"]
+          }
+        }
+      },
+      required: ["pageKeys"]
+    },
     provider: { type: "string", const: "alchemy" },
     note: { type: "string" }
   },
@@ -334,6 +409,8 @@ export const txHistoryExample = {
 } as const;
 
 export const walletReportInputSchema = {
+  description:
+    "Query parameters for GET /wallet-report. Price is $0.02 USDC per call, settled on Base (eip155:8453). This is the bundled /portfolio plus /tx-history response. Use chains=robinhood for canonical Robinhood Stock Tokens.",
   properties: {
     address: {
       type: "string",
@@ -372,6 +449,8 @@ export const walletReportInputSchema = {
 
 export const walletReportOutputSchema = {
   type: "object",
+  description:
+    "Bundled wallet report. summary covers portfolio value and transaction counts. portfolio is the GET /portfolio object. txHistory is the GET /tx-history object.",
   properties: {
     address: { type: "string" },
     timestamp: { type: "string", description: "ISO 8601 date-time." },
@@ -392,11 +471,13 @@ export const walletReportOutputSchema = {
     },
     portfolio: {
       type: "object",
-      description: "Full WalletLens portfolio snapshot. See GET /portfolio for the detailed schema."
+      description:
+        "Full GET /portfolio snapshot: summary.totalValueUsd, summary.stablecoinValueUsd, summary.topHoldings, and tokens[].stockToken for canonical Robinhood Stock Tokens."
     },
     txHistory: {
       type: "object",
-      description: "Full TxLens transaction history snapshot. See GET /tx-history for the detailed schema."
+      description:
+        "Full GET /tx-history snapshot: summary.directions plus transactions[].direction, counterparty, decoded.summary, labels, and riskFlags."
     },
     provider: { type: "string", const: "alchemy" },
     note: { type: "string" }

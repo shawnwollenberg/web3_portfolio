@@ -20,6 +20,9 @@ export class Web3PortfolioStack extends cdk.Stack {
     const cdpApiKeySecret = process.env.CDP_API_KEY_SECRET;
     const rootDomain = process.env.ROOT_DOMAIN || "wallyweb.com";
     const customDomain = process.env.CUSTOM_DOMAIN || `walletlens.${rootDomain}`;
+    const facilitatorUrl = process.env.X402_FACILITATOR_URL || "https://api.cdp.coinbase.com/platform/v2/x402";
+    const devBypass = process.env.X402_DEV_BYPASS === "true" || process.env.X402_DEV_BYPASS === "1";
+    const allowNonCdpFacilitator = process.env.X402_ALLOW_NON_CDP_FACILITATOR === "true";
 
     if (!alchemyApiKey) {
       throw new Error("ALCHEMY_API_KEY must be set in .env before deploying");
@@ -27,6 +30,21 @@ export class Web3PortfolioStack extends cdk.Stack {
 
     if (!payTo) {
       throw new Error("MY_WALLET_ADDRESS must be set in .env before deploying");
+    }
+
+    if (!devBypass && !allowNonCdpFacilitator) {
+      const facilitatorHost = new URL(facilitatorUrl).hostname;
+      if (!facilitatorHost.endsWith("cdp.coinbase.com")) {
+        throw new Error(
+          `X402_FACILITATOR_URL must be the Coinbase CDP facilitator so settlements qualify for x402 Bazaar discovery. Got ${facilitatorUrl}.`
+        );
+      }
+
+      if (!cdpApiKeyId || !cdpApiKeySecret) {
+        throw new Error(
+          "CDP_API_KEY_ID and CDP_API_KEY_SECRET must be set before deploying. They authenticate verify and settle calls to the CDP facilitator."
+        );
+      }
     }
 
     const apiLogGroup = new logs.LogGroup(this, "PortfolioApiLogGroup", {
@@ -59,10 +77,11 @@ export class Web3PortfolioStack extends cdk.Stack {
         ALCHEMY_API_KEY: alchemyApiKey,
         MY_WALLET_ADDRESS: payTo,
         X402_DEV_BYPASS: process.env.X402_DEV_BYPASS || "false",
-        X402_PRICE_USD: process.env.X402_PRICE_USD || "0.02",
+        X402_PORTFOLIO_PRICE_USD: process.env.X402_PORTFOLIO_PRICE_USD || "0.005",
+        X402_TX_HISTORY_PRICE_USD: process.env.X402_TX_HISTORY_PRICE_USD || "0.005",
+        X402_WALLET_REPORT_PRICE_USD: process.env.X402_WALLET_REPORT_PRICE_USD || "0.02",
         X402_NETWORK: process.env.X402_NETWORK || "eip155:8453",
-        X402_FACILITATOR_URL:
-          process.env.X402_FACILITATOR_URL || "https://api.cdp.coinbase.com/platform/v2/x402",
+        X402_FACILITATOR_URL: facilitatorUrl,
         PUBLIC_BASE_URL: process.env.PUBLIC_BASE_URL || `https://${customDomain}`,
         PREVIEW_WALLET_ADDRESS:
           process.env.PREVIEW_WALLET_ADDRESS || "0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea",

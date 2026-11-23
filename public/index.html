@@ -398,8 +398,9 @@ curl <span class="s">"https://walletlens.wallyweb.com/tx-history?address=0x52E29
 curl <span class="s">"https://walletlens.wallyweb.com/wallet-report?address=0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea&amp;chains=base&amp;limit=20"</span>
 
 <span class="c"># Returns 402 Payment Required without a payment header.</span>
-<span class="c"># Pay $0.02 USDC on Base, retry with the x402 payment header,</span>
-<span class="c"># and receive a normalized JSON snapshot.</span></pre>
+<span class="c"># Pay the route price in USDC on Base, retry with the x402 payment header,</span>
+<span class="c"># and receive a normalized JSON snapshot.</span>
+<span class="c"># /portfolio and /tx-history are $0.005. /wallet-report is $0.02.</span></pre>
       </div>
     </div>
   </header>
@@ -411,23 +412,23 @@ curl <span class="s">"https://walletlens.wallyweb.com/wallet-report?address=0x52
         <span class="method">GET</span>
         <div>
           <div class="path">/portfolio</div>
-          <div class="desc">Normalized snapshot — tokens, prices, native balance, recent activity.</div>
+          <div class="desc">Normalized balances plus canonical Robinhood Stock Tokens. Use /wallet-report when you also need transfers.</div>
         </div>
-        <span class="price">$0.02 USDC</span>
+        <span class="price">$0.005 USDC</span>
       </div>
       <div class="ep">
         <span class="method">GET</span>
         <div>
           <div class="path">/tx-history</div>
-          <div class="desc">TxLens enriched transfer history with direction, categories, labels, and insights.</div>
+          <div class="desc">TxLens transfer history with direction, counterparties, and decoded summaries. Use /wallet-report for portfolio too.</div>
         </div>
-        <span class="price">$0.02 USDC</span>
+        <span class="price">$0.005 USDC</span>
       </div>
       <div class="ep">
         <span class="method">GET</span>
         <div>
           <div class="path">/wallet-report</div>
-          <div class="desc">Bundled wallet report with portfolio, top holdings, transaction history, and activity summary.</div>
+          <div class="desc">Portfolio plus transaction history, including Robinhood Stock Token pricing when requested.</div>
         </div>
         <span class="price">$0.02 USDC</span>
       </div>

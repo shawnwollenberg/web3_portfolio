@@ -31,12 +31,13 @@ WalletLens provides machine-readable wallet intelligence for agents and automati
 
 ## Paid Endpoints
 
-- `GET /portfolio`
-- `GET /tx-history`
-- `GET /wallet-report`
-- Price: `$0.02` USDC per request
+- `GET /portfolio`: `$0.005` USDC. Canonical Robinhood Stock Tokens plus normalized EVM balances. For holdings and transfers together, use `/wallet-report`.
+- `GET /tx-history`: `$0.005` USDC. Normalized transfer history with direction, counterparty, decoded summary, and labels. For that history plus portfolio, use `/wallet-report`.
+- `GET /wallet-report`: `$0.02` USDC. Bundled portfolio and transaction history, including Robinhood Stock Token pricing when `chains` includes `robinhood`.
 - Payment network: Base mainnet, `eip155:8453`
+- Payment asset: USDC
 - Payment protocol: x402
+- Facilitator: Coinbase CDP (`https://api.cdp.coinbase.com/platform/v2/x402`)
 - Query params:
   - `address`: required EVM wallet address
   - `chains`: optional comma-separated chain list
@@ -60,8 +61,9 @@ For `chains=robinhood`, WalletLens identifies canonical Robinhood Stock Tokens a
 
 Agents with MCP support can run `npx --yes @shawnwollenberg/walletlens-mcp@0.1.2` or discover `io.github.shawnwollenberg/walletlens` in the official MCP Registry.
 Free MCP tools work without a wallet. Paid tools require a dedicated agent-wallet
-key in `WALLETLENS_X402_PRIVATE_KEY` and default to a maximum of 0.02 Base USDC
-paid only to the pinned WalletLens recipient.
+key in `WALLETLENS_X402_PRIVATE_KEY`. The client ceiling defaults to 0.02 Base USDC,
+which covers `/wallet-report`. `/portfolio` and `/tx-history` are 0.005. Payments
+go only to the pinned WalletLens recipient.
 
 ## How To Call
 

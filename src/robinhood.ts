@@ -1,3 +1,5 @@
+import { isTimeoutError, providerError } from "./http-errors.js";
+
 const ROBINHOOD_API_BASE_URL = "https://api.robinhood.com/rhj";
 const ROBINHOOD_CHAIN_ID = 4663;
 const ASSET_CACHE_TTL_MS = 15 * 60 * 1000;
@@ -162,11 +164,15 @@ async function fetchJson<T>(url: string, timeoutMs: number): Promise<T> {
       signal: AbortSignal.timeout(timeoutMs)
     });
   } catch (cause) {
-    throw new Error(`Robinhood Stock Token request failed: ${cause instanceof Error ? cause.message : String(cause)}`);
+    const timeout = isTimeoutError(cause);
+    throw providerError(
+      `Robinhood Stock Token request ${timeout ? "timed out" : "failed"}: ${cause instanceof Error ? cause.message : String(cause)}`,
+      { timeout }
+    );
   }
 
   if (!response.ok) {
-    throw new Error(`Robinhood Stock Token request failed with HTTP ${response.status}`);
+    throw providerError(`Robinhood Stock Token request failed with HTTP ${response.status}`);
   }
 
   return (await response.json()) as T;
