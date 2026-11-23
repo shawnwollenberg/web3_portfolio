@@ -1,4 +1,5 @@
 import { config } from "./config.js";
+import { isTimeoutError, providerError } from "./http-errors.js";
 
 const ALCHEMY_DATA_API_BASE_URL = "https://api.g.alchemy.com/data/v1";
 
@@ -99,7 +100,11 @@ async function postAlchemyData<T>(path: string, body: unknown, label: string): P
       signal: AbortSignal.timeout(config.providerTimeoutMs)
     });
   } catch (cause) {
-    throw providerError(`${label} failed: ${cause instanceof Error ? cause.message : String(cause)}`);
+    const timeout = isTimeoutError(cause);
+    throw providerError(
+      `${label} ${timeout ? "timed out" : "failed"}: ${cause instanceof Error ? cause.message : String(cause)}`,
+      { timeout }
+    );
   }
 
   const responseText = await response.text();
@@ -126,8 +131,3 @@ function extractAlchemyError(responseText: string, status: number): string {
   return responseText || `HTTP ${status}`;
 }
 
-function providerError(message: string) {
-  const error = new Error(message);
-  error.name = "ProviderError";
-  return error;
-}

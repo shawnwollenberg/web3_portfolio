@@ -446,7 +446,7 @@
     "/portfolio": {
       "get": {
         "summary": "Get a normalized wallet portfolio snapshot",
-        "description": "Requires x402 payment. Use this endpoint when the user asks for EVM token balances, wallet holdings, stablecoin totals, top holdings, canonical Robinhood Stock Tokens, or a normalized portfolio snapshot. Unpaid requests with a valid address return HTTP 402 with a payment-required header. If you do not have an address yet, call /ask or /analyze first.",
+        "description": "$0.005 USDC per call on Base (eip155:8453). WalletLens /portfolio identifies canonical Robinhood Stock Tokens on Robinhood Chain, including multiplier-adjusted midpoint USD price, bid, ask, corporate-action multiplier, and trading-halt status, plus normalized EVM balances, stablecoin totals, and top holdings. Query: address (required), chains (optional; use robinhood for Stock Tokens). For holdings and decoded transfers together, call GET /wallet-report at $0.02. Unpaid requests with a valid address return HTTP 402.",
         "parameters": [
           {
             "name": "address",
@@ -507,7 +507,10 @@
             "description": "Internal server error"
           },
           "502": {
-            "description": "Upstream provider error"
+            "description": "Upstream provider error. JSON body includes code provider_error."
+          },
+          "504": {
+            "description": "Upstream provider timed out. JSON body includes code provider_timeout. Settlement is not completed for this response."
           }
         }
       }
@@ -515,7 +518,7 @@
     "/tx-history": {
       "get": {
         "summary": "Get enriched wallet transaction history",
-        "description": "Requires x402 payment. Use this endpoint when the user asks for recent wallet activity, transaction history, USDC transfers, normalized transfer rows, counterparties, or Base transfer history. Returns normalized multi-chain transfer history with direction, categorization, transfer summaries, labels, and data-quality flags. If you do not have an address yet, call /ask or /analyze first.",
+        "description": "$0.005 USDC per call on Base (eip155:8453). TxLens /tx-history returns normalized transfer history for Base, Ethereum, Optimism, Arbitrum, Polygon, and Robinhood Chain, with direction, counterparty, category, decoded summary, labels, and data-quality warnings. Query: address (required), chains, limit (1-100), days (1-365), category. For this history bundled with portfolio balances and Robinhood Stock Token pricing, call GET /wallet-report at $0.02. Unpaid requests with a valid address return HTTP 402.",
         "parameters": [
           {
             "name": "address",
@@ -601,7 +604,10 @@
             "description": "Internal server error"
           },
           "502": {
-            "description": "Upstream provider error"
+            "description": "Upstream provider error. JSON body includes code provider_error."
+          },
+          "504": {
+            "description": "Upstream provider timed out. JSON body includes code provider_timeout. Settlement is not completed for this response."
           }
         }
       }
@@ -609,7 +615,7 @@
     "/wallet-report": {
       "get": {
         "summary": "Get a bundled wallet report",
-        "description": "Requires x402 payment. Use this endpoint for broad user intents such as analyze this wallet, summarize this Base or Robinhood Chain wallet, explain this onchain wallet activity, get portfolio and transaction history, show top holdings and counterparties, inspect canonical Robinhood Stock Tokens, or inspect recent USDC transfers. Returns normalized EVM portfolio balances plus TxLens transaction history, top holdings, counterparties, transfer summaries, and wallet activity statistics in one agent-friendly response. If unsure which paid endpoint to choose, use /wallet-report.",
+        "description": "$0.02 USDC per call on Base (eip155:8453). WalletLens /wallet-report bundles the $0.005 /portfolio snapshot and the $0.005 /tx-history feed, including canonical Robinhood Stock Token pricing and trading-halt status when chains includes robinhood. Query: address (required), chains, limit, days, category. Response includes summary.totalValueUsd, summary.topHoldings, summary.transactionCount, portfolio, and txHistory. Use /portfolio or /tx-history when only one section is needed. Unpaid requests with a valid address return HTTP 402.",
         "parameters": [
           {
             "name": "address",
@@ -695,7 +701,10 @@
             "description": "Internal server error"
           },
           "502": {
-            "description": "Upstream provider error"
+            "description": "Upstream provider error. JSON body includes code provider_error."
+          },
+          "504": {
+            "description": "Upstream provider timed out. JSON body includes code provider_timeout. Settlement is not completed for this response."
           }
         }
       }
@@ -737,13 +746,39 @@
   },
   "components": {
     "schemas": {
+      "PaymentStatus": {
+        "type": "object",
+        "properties": {
+          "protocol": { "type": "string", "const": "x402" },
+          "scheme": { "type": "string", "const": "exact" },
+          "network": { "type": "string", "description": "CAIP-2 payment network. Production is Base mainnet, eip155:8453." },
+          "asset": { "type": "string", "const": "USDC" },
+          "payTo": { "type": ["string", "null"] },
+          "defaultPrice": { "type": "string", "description": "Price of GET /wallet-report, the highest per-call price." },
+          "facilitatorUrl": { "type": "string" },
+          "facilitator": { "type": "string", "enum": ["coinbase-cdp", "custom"] },
+          "cdpAuthConfigured": { "type": "boolean", "description": "True when CDP API key id and secret are present. The secret is never returned." },
+          "bazaarEligible": { "type": "boolean", "description": "True when settlement is configured for the Coinbase CDP facilitator on Base mainnet." },
+          "pricesUsd": {
+            "type": "object",
+            "properties": {
+              "portfolio": { "type": "string" },
+              "txHistory": { "type": "string" },
+              "walletReport": { "type": "string" }
+            },
+            "required": ["portfolio", "txHistory", "walletReport"]
+          }
+        },
+        "required": ["protocol", "scheme", "network", "asset", "facilitatorUrl", "facilitator", "cdpAuthConfigured", "bazaarEligible", "pricesUsd"]
+      },
       "Health": {
         "type": "object",
         "properties": {
           "ok": { "type": "boolean" },
           "service": { "type": "string" },
           "name": { "type": "string" },
-          "x402DevBypass": { "type": "boolean" }
+          "x402DevBypass": { "type": "boolean" },
+          "payment": { "$ref": "#/components/schemas/PaymentStatus" }
         },
         "required": ["ok", "service", "name", "x402DevBypass"]
       },
@@ -757,6 +792,7 @@
           "uptimeSeconds": { "type": "integer" },
           "baseUrl": { "type": "string" },
           "x402DevBypass": { "type": "boolean" },
+          "payment": { "$ref": "#/components/schemas/PaymentStatus" },
           "paidResources": {
             "type": "array",
             "items": {

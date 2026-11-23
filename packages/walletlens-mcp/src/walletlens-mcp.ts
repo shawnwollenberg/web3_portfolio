@@ -20,7 +20,7 @@ const DEFAULT_BASE_URL = "https://walletlens.wallyweb.com";
 const DEFAULT_PAY_TO = "0xA7c82E9775A9594c673E3Fde8a42D3D17dE2B957";
 
 if (process.argv.includes("--help") || process.argv.includes("-h")) {
-  process.stdout.write(`WalletLens MCP ${PACKAGE_VERSION}\n\nRun this command from an MCP client over stdio.\n\nEnvironment:\n  WALLETLENS_X402_PRIVATE_KEY   Dedicated agent-wallet signing key for paid tools\n  WALLETLENS_MAX_PAYMENT_USDC  Maximum per-call payment (default: 0.02)\n  WALLETLENS_EXPECTED_PAY_TO   Required recipient (defaults to WalletLens)\n  WALLETLENS_BASE_URL          API origin (default: ${DEFAULT_BASE_URL})\n  WALLETLENS_REQUEST_TIMEOUT_MS Request timeout (default: 20000)\n`);
+  process.stdout.write(`WalletLens MCP ${PACKAGE_VERSION}\n\nRun this command from an MCP client over stdio.\n\nEnvironment:\n  WALLETLENS_X402_PRIVATE_KEY   Dedicated agent-wallet signing key for paid tools\n  WALLETLENS_MAX_PAYMENT_USDC  Maximum per-call payment (default: 0.02, covers /wallet-report; /portfolio and /tx-history are 0.005)\n  WALLETLENS_EXPECTED_PAY_TO   Required recipient (defaults to WalletLens)\n  WALLETLENS_BASE_URL          API origin (default: ${DEFAULT_BASE_URL})\n  WALLETLENS_REQUEST_TIMEOUT_MS Request timeout (default: 20000)\n`);
   process.exit(0);
 }
 

@@ -7,6 +7,7 @@ import { getPortfolioSnapshot, type PortfolioSnapshot } from "./portfolio.js";
 import { portfolioExample, txHistoryExample, walletReportExample } from "./schemas.js";
 import { getTxHistorySnapshot } from "./tx-history.js";
 import { getWalletReportSnapshot } from "./wallet-report.js";
+import { toHttpError } from "./http-errors.js";
 import { createPaymentMiddleware, paymentRouteConfig } from "./x402.js";
 
 const demoWallet = "0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea";
@@ -187,7 +188,8 @@ export function createApp() {
       ok: true,
       service: "web3-x402-portfolio",
       name: "WalletLens API",
-      x402DevBypass: config.x402DevBypass
+      x402DevBypass: config.x402DevBypass,
+      payment: buildPaymentStatus()
     });
   });
 
@@ -200,6 +202,7 @@ export function createApp() {
       uptimeSeconds: Math.round(process.uptime()),
       baseUrl: config.publicBaseUrl,
       x402DevBypass: config.x402DevBypass,
+      payment: buildPaymentStatus(),
       paidResources: getPaidResources(),
       freeResources: [
         "/",
@@ -309,6 +312,7 @@ export function createApp() {
     res.status(405).json({
       error: "Method not allowed",
       message: "WalletLens paid resources currently use GET query parameters so the paid URL is deterministic.",
+      code: "method_not_allowed",
       requestedMethod: req.method,
       supportedMethod: "GET",
       endpoint: req.path,
@@ -358,34 +362,20 @@ export function createApp() {
     }
   });
 
+  app.use((_req, res) => {
+    res.status(404).json({
+      error: "Not found",
+      message: "No WalletLens route matched this request.",
+      code: "not_found",
+      discover: `${config.publicBaseUrl}/discover`
+    });
+  });
+
   app.use((error: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
-    if (error instanceof z.ZodError) {
-      res.status(400).json({ error: "Invalid request", details: error.flatten() });
-      return;
-    }
-
-    if (error instanceof Error && error.name === "ValidationError") {
-      res.status(400).json({ error: error.message });
-      return;
-    }
-
-    if (error instanceof Error && error.name === "ConfigurationError") {
-      res.status(500).json({ error: error.message });
-      return;
-    }
-
-    if (error instanceof Error && error.name === "ProviderError") {
-      res.status(502).json({ error: "Provider error", details: error.message });
-      return;
-    }
-
-    if (error instanceof Error && error.message.startsWith("Unsupported chain:")) {
-      res.status(400).json({ error: error.message });
-      return;
-    }
-
-    console.error(error);
-    res.status(500).json({ error: "Internal error" });
+    if (res.headersSent) return;
+    const httpError = toHttpError(error);
+    if (httpError.status >= 500) console.error(error);
+    res.status(httpError.status).json(httpError.body);
   });
 
   return app;
@@ -405,9 +395,34 @@ function buildMcpMetadata() {
     run: `npx --yes ${npmMcpPackage}`,
     freeTools: ["get_service_metadata", "get_supported_chains", "get_openapi_schema"],
     paidTools: ["get_portfolio", "get_tx_history", "get_wallet_report"],
-    defaultMaxPaymentUsdc: "0.02",
-    network: "eip155:8453",
+    pricesUsd: {
+      portfolio: config.x402PortfolioPriceUsd,
+      txHistory: config.x402TxHistoryPriceUsd,
+      walletReport: config.x402WalletReportPriceUsd
+    },
+    defaultMaxPaymentUsdc: config.x402WalletReportPriceUsd,
+    network: config.x402Network,
     asset: "USDC"
+  };
+}
+
+function buildPaymentStatus() {
+  return {
+    protocol: "x402",
+    scheme: "exact",
+    network: config.x402Network,
+    asset: "USDC",
+    payTo: config.payTo ?? null,
+    defaultPrice: `$${config.x402WalletReportPriceUsd}`,
+    facilitatorUrl: config.x402FacilitatorUrl,
+    facilitator: config.usesCdpFacilitator ? "coinbase-cdp" : "custom",
+    cdpAuthConfigured: config.cdpAuthConfigured,
+    bazaarEligible: config.bazaarEligible,
+    pricesUsd: {
+      portfolio: config.x402PortfolioPriceUsd,
+      txHistory: config.x402TxHistoryPriceUsd,
+      walletReport: config.x402WalletReportPriceUsd
+    }
   };
 }
 
@@ -493,13 +508,7 @@ function buildDiscoverPayload() {
     description:
       "WalletLens is an x402-paid EVM wallet intelligence API for agents, including canonical Robinhood Stock Token portfolios, pricing, and transaction history.",
     baseUrl: config.publicBaseUrl,
-    payment: {
-      protocol: "x402",
-      scheme: "exact",
-      network: paymentRouteConfig["GET /wallet-report"].accepts.network,
-      asset: "USDC",
-      defaultPrice: paymentRouteConfig["GET /wallet-report"].accepts.price
-    },
+    payment: buildPaymentStatus(),
     mcp: buildMcpMetadata(),
     recommendedFlow: [
       "Call /wallets-to-try for seeded wallet addresses and direct paid URLs that demonstrate valid address requests.",
@@ -918,6 +927,7 @@ function buildInvalidRequestBody(path: string, error: z.ZodError) {
   return {
     error: "Invalid request",
     message: "WalletLens paid endpoints require a valid EVM address before x402 payment negotiation.",
+    code: "invalid_request",
     details: error.flatten(),
     hint: "To trigger x402 payment negotiation, retry with address=0x... and optional chains=base.",
     quote: `${config.publicBaseUrl}/quote`,

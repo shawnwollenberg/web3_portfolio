@@ -54,7 +54,36 @@ describe("agent request validation", () => {
     };
     assert.equal(challenge.resource?.url, "https://walletlens.wallyweb.com/portfolio");
     assert.match(challenge.resource?.description ?? "", /Robinhood Stock Tokens/);
+    assert.match(challenge.resource?.description ?? "", /\$0\.005/);
+    assert.match(challenge.resource?.description ?? "", /\/wallet-report/);
     assert.ok(challenge.extensions?.bazaar);
+  });
+
+  it("prices portfolio and tx-history below the bundled wallet report", async () => {
+    const prices = new Map<string, { amount?: string; description?: string }>();
+    for (const path of ["/portfolio", "/tx-history", "/wallet-report"]) {
+      const response = await fetch(`${baseUrl}${path}?address=${address}&chains=base&limit=1`);
+      assert.equal(response.status, 402);
+      const header = response.headers.get("payment-required");
+      assert.ok(header);
+      const challenge = JSON.parse(Buffer.from(header, "base64url").toString("utf8")) as {
+        accepts?: Array<{ amount?: string; network?: string }>;
+        resource?: { description?: string };
+      };
+      prices.set(path, {
+        amount: challenge.accepts?.[0]?.amount,
+        description: challenge.resource?.description
+      });
+      assert.equal(challenge.accepts?.[0]?.network, "eip155:8453");
+    }
+
+    assert.equal(prices.get("/portfolio")?.amount, "5000");
+    assert.equal(prices.get("/tx-history")?.amount, "5000");
+    assert.equal(prices.get("/wallet-report")?.amount, "20000");
+    assert.match(prices.get("/tx-history")?.description ?? "", /\$0\.005/);
+    assert.match(prices.get("/tx-history")?.description ?? "", /\/wallet-report/);
+    assert.match(prices.get("/wallet-report")?.description ?? "", /\$0\.02/);
+    assert.match(prices.get("/wallet-report")?.description ?? "", /Robinhood Stock Token/);
   });
 
   it("routes combined portfolio and transaction intent to the wallet report", async () => {
@@ -97,8 +126,12 @@ describe("agent request validation", () => {
       };
       assert.equal(body.items?.length, 3);
       assert.equal(body.pagination?.total, 3);
-      assert.ok(body.items?.some(item => item.resource?.endsWith("/wallet-report")));
-      assert.equal(body.items?.[0]?.accepts?.[0]?.amount, "20000");
+      const amounts = new Map(
+        (body.items ?? []).map(item => [new URL(item.resource ?? "http://invalid").pathname, item.accepts?.[0]?.amount])
+      );
+      assert.equal(amounts.get("/portfolio"), "5000");
+      assert.equal(amounts.get("/tx-history"), "5000");
+      assert.equal(amounts.get("/wallet-report"), "20000");
       assert.match(body.items?.[0]?.accepts?.[0]?.asset ?? "", /^0x[a-fA-F0-9]{40}$/);
     }
   });
@@ -119,6 +152,47 @@ describe("agent request validation", () => {
     assert.equal(response.status, 200);
     assert.equal(response.headers.get("allow"), "GET, HEAD");
     assert.equal(response.headers.get("x-walletlens-required-parameter"), "address");
+  });
+
+  it("reports the CDP facilitator and per-route prices", async () => {
+    const response = await fetch(`${baseUrl}/status`);
+    const body = (await response.json()) as {
+      payment?: {
+        facilitator?: string;
+        facilitatorUrl?: string;
+        network?: string;
+        bazaarEligible?: boolean;
+        cdpAuthConfigured?: boolean;
+        pricesUsd?: { portfolio?: string; txHistory?: string; walletReport?: string };
+      };
+    };
+    assert.equal(response.status, 200);
+    assert.equal(body.payment?.facilitator, "coinbase-cdp");
+    assert.equal(body.payment?.facilitatorUrl, "https://api.cdp.coinbase.com/platform/v2/x402");
+    assert.equal(body.payment?.network, "eip155:8453");
+    assert.equal(body.payment?.bazaarEligible, true);
+    assert.equal(body.payment?.cdpAuthConfigured, true);
+    assert.deepEqual(body.payment?.pricesUsd, {
+      portfolio: "0.005",
+      txHistory: "0.005",
+      walletReport: "0.02"
+    });
+  });
+
+  it("returns JSON for unknown routes and invalid JSON bodies", async () => {
+    const missing = await fetch(`${baseUrl}/does-not-exist`);
+    assert.equal(missing.status, 404);
+    const missingBody = (await missing.json()) as { code?: string };
+    assert.equal(missingBody.code, "not_found");
+
+    const invalid = await fetch(`${baseUrl}/health`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: "{not-json"
+    });
+    assert.equal(invalid.status, 400);
+    const invalidBody = (await invalid.json()) as { code?: string };
+    assert.equal(invalidBody.code, "invalid_json");
   });
 
   it("guides POST clients to deterministic GET paid URLs", async () => {

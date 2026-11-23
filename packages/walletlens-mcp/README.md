@@ -13,7 +13,7 @@ The server runs locally over stdio. Paid requests are signed locally with a dedi
 - `get_tx_history` — paid normalized transaction history
 - `get_wallet_report` — paid combined portfolio and transaction report
 
-Paid tools cost up to 0.02 USDC per invocation on Base mainnet. Each invocation performs at most one payment attempt.
+Paid tools settle in USDC on Base mainnet. `/portfolio` and `/tx-history` are 0.005 USDC. `/wallet-report` is 0.02 USDC. The default payment ceiling is 0.02 USDC, and each invocation performs at most one payment attempt.
 
 ## Requirements
 

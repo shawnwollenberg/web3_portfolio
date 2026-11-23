@@ -38,7 +38,7 @@ if (!privateKey) {
     [
       "X402_TEST_PRIVATE_KEY is required.",
       "Add it to .env as X402_TEST_PRIVATE_KEY=0x...",
-      "Use a dedicated test wallet funded with Base USDC for the $0.02 payment."
+      "Use a dedicated test wallet funded with Base USDC. This sends a real payment at the route price: $0.005 for portfolio and tx-history, $0.02 for wallet-report."
     ].join("\n")
   );
 }

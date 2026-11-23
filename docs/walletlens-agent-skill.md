@@ -21,7 +21,10 @@ Use this skill when an agent needs EVM wallet intelligence, a normalized portfol
 - MCP install/run: `npx --yes @shawnwollenberg/walletlens-mcp@0.1.2`
 - Payment protocol: x402
 - Payment network: Base mainnet, `eip155:8453`
-- Price: `$0.02` USDC per paid call
+- Facilitator: Coinbase CDP
+- `GET /portfolio`: `$0.005` USDC. Canonical Robinhood Stock Tokens plus normalized balances. Use `/wallet-report` when transfers are also needed.
+- `GET /tx-history`: `$0.005` USDC. Direction, counterparty, decoded summary, and labels. Use `/wallet-report` when portfolio pricing is also needed.
+- `GET /wallet-report`: `$0.02` USDC. Portfolio and transaction history in one response.
 
 ## MCP Setup
 
@@ -111,7 +114,7 @@ Supported chains:
 - `polygon`
 - `robinhood` (aliases: `robinhood-chain`, `rh`)
 
-For `chains=robinhood`, portfolio and wallet-report responses identify canonical Robinhood Stock Tokens, include Robinhood bid/ask and corporate-action multiplier metadata, calculate a multiplier-adjusted midpoint USD value, and surface trading halts. Internal transfer traces are unavailable, but external and token transfers are returned through TxLens. Payment remains $0.02 Base USDC.
+For `chains=robinhood`, portfolio and wallet-report responses identify canonical Robinhood Stock Tokens, include Robinhood bid/ask and corporate-action multiplier metadata, calculate a multiplier-adjusted midpoint USD value, and surface trading halts. Internal transfer traces are unavailable, but external and token transfers are returned through TxLens. `/portfolio` and `/tx-history` are `$0.005` Base USDC. `/wallet-report` is `$0.02` Base USDC.
 
 ## x402 Flow
 

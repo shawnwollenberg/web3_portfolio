@@ -5,6 +5,7 @@ import {
 } from "./alchemy.js";
 import { z } from "zod";
 import { config } from "./config.js";
+import { isTimeoutError, providerError } from "./http-errors.js";
 import { parseChains, type SupportedChain } from "./chains.js";
 
 const addressSchema = z.string().regex(/^0x[a-fA-F0-9]{40}$/);
@@ -229,22 +230,20 @@ async function getAssetTransfers(chain: SupportedChain, params: Record<string, u
       signal: AbortSignal.timeout(config.providerTimeoutMs)
     });
   } catch (cause) {
-    const error = new Error(
-      `Alchemy transfer request failed: ${cause instanceof Error ? cause.message : String(cause)}`
+    const timeout = isTimeoutError(cause);
+    throw providerError(
+      `Alchemy transfer request ${timeout ? "timed out" : "failed"}: ${cause instanceof Error ? cause.message : String(cause)}`,
+      { timeout }
     );
-    error.name = "ProviderError";
-    throw error;
   }
 
   const responseText = await response.text();
   const body = parseAssetTransfersResponse(responseText);
 
   if (!response.ok || body.error) {
-    const error = new Error(
+    throw providerError(
       body.error?.message ?? (responseText || `Alchemy transfer request failed with HTTP ${response.status}`)
     );
-    error.name = "ProviderError";
-    throw error;
   }
 
   return {
