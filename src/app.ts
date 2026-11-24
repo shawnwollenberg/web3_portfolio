@@ -956,12 +956,33 @@ function validatePaidRouteQuery(req: express.Request, res: express.Response, nex
   }
 
   const parsed = schema.safeParse(req.query);
-  if (!parsed.success) {
-    res.status(400).json(buildInvalidRequestBody(req.path, parsed.error));
+  if (parsed.success) {
+    next();
     return;
   }
 
-  next();
+  // CDP indexes the resource URL with no query string and requires that probe
+  // to return 402. A missing address is not a payment attempt, so let the
+  // x402 middleware advertise the route. A present payment header, or a query
+  // that is present but invalid, still fails here and is never settled.
+  const attemptingPayment = Boolean(req.get("payment-signature") || req.get("x-payment"));
+  if (!attemptingPayment && queryFailureIsOnlyMissingFields(parsed.error, req.query)) {
+    next();
+    return;
+  }
+
+  res.status(400).json(buildInvalidRequestBody(req.path, parsed.error));
+}
+
+function queryFailureIsOnlyMissingFields(
+  error: z.ZodError,
+  query: express.Request["query"]
+): boolean {
+  return error.issues.every(issue => {
+    if (issue.code !== "invalid_type") return false;
+    const key = issue.path[0];
+    return typeof key === "string" && query[key] === undefined;
+  });
 }
 
 function buildInvalidRequestBody(path: string, error: z.ZodError) {
