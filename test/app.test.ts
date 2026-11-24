@@ -134,8 +134,30 @@ describe("agent request validation", () => {
     assert.deepEqual(body.mcp?.paidTools, ["get_portfolio", "get_tx_history", "get_wallet_report"]);
   });
 
-  it("rejects a missing paid-route address before payment middleware", async () => {
-    const response = await fetch(`${baseUrl}/portfolio?chains=base`);
+  it("returns 402 for the queryless resource URL CDP crawls", async () => {
+    for (const path of ["/portfolio", "/tx-history", "/wallet-report"]) {
+      const response = await fetch(`${baseUrl}${path}`);
+      assert.equal(response.status, 402, path);
+      const header = response.headers.get("payment-required");
+      assert.ok(header);
+      const challenge = JSON.parse(Buffer.from(header, "base64url").toString("utf8")) as {
+        resource?: { url?: string };
+        extensions?: { bazaar?: unknown };
+      };
+      assert.equal(challenge.resource?.url, `https://walletlens.wallyweb.com${path}`);
+      assert.ok(challenge.extensions?.bazaar);
+    }
+  });
+
+  it("rejects a paid attempt that omits the address before settlement", async () => {
+    const response = await fetch(`${baseUrl}/portfolio?chains=base`, {
+      headers: { "payment-signature": "not-a-payment" }
+    });
+    assert.equal(response.status, 400);
+  });
+
+  it("rejects an invalid paid-route address before payment middleware", async () => {
+    const response = await fetch(`${baseUrl}/portfolio?address=not-an-address&chains=base`);
     assert.equal(response.status, 400);
   });
 
