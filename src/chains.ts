@@ -98,3 +98,44 @@ export function parseChains(input?: string): SupportedChain[] {
 export function networkToChain(network: string): SupportedChain | undefined {
   return Object.values(supportedChains).find(chain => chain.alchemyNetwork === network);
 }
+
+export const chainAliases = {
+  eth: "ethereum",
+  "robinhood-chain": "robinhood",
+  rh: "robinhood"
+} as const;
+
+const canonicalChains = [...supportedChainSlugs];
+
+export const routeChainSupport = {
+  portfolio: {
+    path: "/portfolio" as const,
+    chains: canonicalChains,
+    note: "Token balances on base, ethereum, optimism, arbitrum, polygon, and robinhood. Canonical Robinhood Stock Token prices, bid/ask, multiplier, and trading-halt status when chains includes robinhood. recentActivity excludes Robinhood Chain."
+  },
+  txHistory: {
+    path: "/tx-history" as const,
+    chains: canonicalChains,
+    note: "Transfer history on base, ethereum, optimism, arbitrum, polygon, and robinhood. Internal transfer traces are unavailable on robinhood. Transaction USD values are null. This route does not price Robinhood Stock Tokens."
+  },
+  walletReport: {
+    path: "/wallet-report" as const,
+    chains: canonicalChains,
+    note: "Portfolio and transfer history on base, ethereum, optimism, arbitrum, polygon, and robinhood. Stock Token pricing when chains includes robinhood. recentActivity excludes Robinhood Chain. Internal traces are unavailable on robinhood."
+  }
+};
+
+export const helperChainSupport = {
+  paths: ["/ask", "/analyze", "/quote"] as const,
+  chains: canonicalChains,
+  note: "The free /ask, /analyze, and /quote helpers accept the same six slugs and only build paid URLs."
+};
+
+export function buildChainSupport() {
+  return {
+    slugs: canonicalChains,
+    aliases: chainAliases,
+    helpers: helperChainSupport,
+    routes: routeChainSupport
+  };
+}

@@ -106,15 +106,14 @@ Optional query params:
 
 Supported chains:
 
-- `base`
-- `ethereum`
-- `eth`
-- `optimism`
-- `arbitrum`
-- `polygon`
-- `robinhood` (aliases: `robinhood-chain`, `rh`)
+Every paid route and the free helpers accept `base`, `ethereum`, `optimism`, `arbitrum`, `polygon`, and `robinhood`. Aliases: `eth`, `robinhood-chain`, `rh`. Default: `base,ethereum`.
 
-For `chains=robinhood`, portfolio and wallet-report responses identify canonical Robinhood Stock Tokens, include Robinhood bid/ask and corporate-action multiplier metadata, calculate a multiplier-adjusted midpoint USD value, and surface trading halts. Internal transfer traces are unavailable, but external and token transfers are returned through TxLens. `/portfolio` and `/tx-history` are `$0.005` Base USDC. `/wallet-report` is `$0.02` Base USDC.
+- `GET /portfolio`: Token balances on base, ethereum, optimism, arbitrum, polygon, and robinhood. Canonical Robinhood Stock Token prices, bid/ask, multiplier, and trading-halt status when chains includes robinhood. recentActivity excludes Robinhood Chain.
+- `GET /tx-history`: Transfer history on base, ethereum, optimism, arbitrum, polygon, and robinhood. Internal transfer traces are unavailable on robinhood. Transaction USD values are null. This route does not price Robinhood Stock Tokens.
+- `GET /wallet-report`: Portfolio and transfer history on base, ethereum, optimism, arbitrum, polygon, and robinhood. Stock Token pricing when chains includes robinhood. recentActivity excludes Robinhood Chain. Internal traces are unavailable on robinhood.
+- Helpers: The free /ask, /analyze, and /quote helpers accept the same six slugs and only build paid URLs.
+
+For `chains=robinhood`, portfolio and wallet-report responses identify canonical Robinhood Stock Tokens, include Robinhood bid/ask and corporate-action multiplier metadata, calculate a multiplier-adjusted midpoint USD value, and surface trading halts. `/portfolio` and `/tx-history` are `$0.005` Base USDC. `/wallet-report` is `$0.02` Base USDC.
 
 ## x402 Flow
 

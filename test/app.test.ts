@@ -1,8 +1,11 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import type { AddressInfo } from "node:net";
 import { after, before, describe, it } from "node:test";
 import type { Server } from "node:http";
 import { createApp } from "../src/app.js";
+import { helperChainSupport, routeChainSupport, supportedChainSlugs } from "../src/chains.js";
+import { COMPASS_URL, config } from "../src/config.js";
 import { CDP_RESOURCE_DESCRIPTION_MAX } from "../src/x402.js";
 
 const address = "0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea";
@@ -203,6 +206,80 @@ describe("agent request validation", () => {
       txHistory: "0.005",
       walletReport: "0.02"
     });
+  });
+
+  it("states the same six chains per route, with the real feature limits", async () => {
+    const response = await fetch(`${baseUrl}/status`);
+    const body = (await response.json()) as {
+      supportedChains?: string[];
+      chainSupport?: {
+        routes?: {
+          portfolio?: { chains?: string[]; note?: string };
+          txHistory?: { chains?: string[]; note?: string };
+          walletReport?: { chains?: string[]; note?: string };
+        };
+        helpers?: { note?: string; chains?: string[] };
+      };
+      compass?: unknown;
+    };
+    assert.deepEqual(body.supportedChains, [...supportedChainSlugs]);
+    assert.deepEqual(body.chainSupport?.routes?.portfolio?.chains, [...supportedChainSlugs]);
+    assert.deepEqual(body.chainSupport?.routes?.txHistory?.chains, [...supportedChainSlugs]);
+    assert.deepEqual(body.chainSupport?.routes?.walletReport?.chains, [...supportedChainSlugs]);
+    assert.equal(body.chainSupport?.routes?.portfolio?.note, routeChainSupport.portfolio.note);
+    assert.equal(body.chainSupport?.routes?.txHistory?.note, routeChainSupport.txHistory.note);
+    assert.equal(body.chainSupport?.routes?.walletReport?.note, routeChainSupport.walletReport.note);
+    assert.equal(body.chainSupport?.helpers?.note, helperChainSupport.note);
+    assert.equal(body.compass, null);
+
+    const discover = (await (await fetch(`${baseUrl}/discover`)).json()) as {
+      chainSupport?: { routes?: { txHistory?: { note?: string } } };
+    };
+    assert.equal(discover.chainSupport?.routes?.txHistory?.note, routeChainSupport.txHistory.note);
+
+    const docs = [
+      "public/index.html",
+      "public/llms.txt",
+      "public/llms-full.txt",
+      "docs/walletlens-agent-skill.md",
+      "public/openapi.json"
+    ];
+    for (const file of docs) {
+      const text = readFileSync(file, "utf8");
+      assert.ok(text.includes(routeChainSupport.portfolio.note), `${file} is missing the portfolio chain note`);
+      assert.ok(text.includes(routeChainSupport.txHistory.note), `${file} is missing the tx-history chain note`);
+      assert.ok(text.includes(routeChainSupport.walletReport.note), `${file} is missing the wallet-report chain note`);
+      assert.equal(text.includes("facilitator.x402.org"), false, file);
+      assert.equal(text.includes("https://x402.org/facilitator"), false, file);
+    }
+
+    const home = await (await fetch(`${baseUrl}/`)).text();
+    const llms = await (await fetch(`${baseUrl}/llms.txt`)).text();
+    const llmsFull = await (await fetch(`${baseUrl}/llms-full.txt`)).text();
+    const pricing = await (await fetch(`${baseUrl}/pricing`)).text();
+    for (const page of [home, llms, llmsFull, pricing]) {
+      assert.match(page, new RegExp(`\\$${config.x402PortfolioPriceUsd.replace(".", "\\.")}`));
+      assert.match(page, new RegExp(`\\$${config.x402WalletReportPriceUsd.replace(".", "\\.")}`));
+      assert.match(page, /Discoverable in the Coinbase x402 Bazaar|Coinbase CDP/);
+    }
+    assert.match(home, /Discoverable in the Coinbase x402 Bazaar/);
+    assert.match(llms, /Discoverable in the Coinbase x402 Bazaar/);
+    assert.match(llmsFull, /Discoverable in the Coinbase x402 Bazaar/);
+    assert.equal(home.includes(COMPASS_URL), false);
+    assert.equal(llms.includes(COMPASS_URL), false);
+
+    process.env.COMPASS_LINK = "true";
+    try {
+      const compassHome = await (await fetch(`${baseUrl}/`)).text();
+      const compassLlms = await (await fetch(`${baseUrl}/llms.txt`)).text();
+      const status = (await (await fetch(`${baseUrl}/status`)).json()) as { compass?: { url?: string } };
+      assert.match(compassHome, /Related: <a href="https:\/\/compass\.wallyweb\.com"/);
+      assert.match(compassLlms, /## Related\n\n- \[x402 Compass\]\(https:\/\/compass\.wallyweb\.com\)/);
+      assert.equal(status.compass?.url, COMPASS_URL);
+      assert.equal((await (await fetch(`${baseUrl}/llms-full.txt`)).text()).includes(COMPASS_URL), false);
+    } finally {
+      delete process.env.COMPASS_LINK;
+    }
   });
 
   it("returns JSON for unknown routes and invalid JSON bodies", async () => {

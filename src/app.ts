@@ -1,8 +1,9 @@
 import express from "express";
+import { readFileSync } from "node:fs";
 import { z } from "zod";
 import { analyticsMiddleware } from "./analytics.js";
-import { parseChains, supportedChainSlugs } from "./chains.js";
-import { config } from "./config.js";
+import { buildChainSupport, parseChains, supportedChainSlugs } from "./chains.js";
+import { COMPASS_URL, config, isCompassLinkEnabled } from "./config.js";
 import { getPortfolioSnapshot, type PortfolioSnapshot } from "./portfolio.js";
 import { portfolioExample, txHistoryExample, walletReportExample } from "./schemas.js";
 import { getTxHistorySnapshot } from "./tx-history.js";
@@ -130,6 +131,24 @@ export function createApp() {
 
   app.use(express.json());
   app.use(analyticsMiddleware);
+  app.get("/", (_req, res, next) => {
+    if (!isCompassLinkEnabled()) {
+      next();
+      return;
+    }
+
+    const html = readFileSync("public/index.html", "utf8");
+    res.type("html").send(html.replace("<!-- compass -->", compassHomepageHtml()));
+  });
+  app.get("/llms.txt", (_req, res, next) => {
+    if (!isCompassLinkEnabled()) {
+      next();
+      return;
+    }
+
+    const text = readFileSync("public/llms.txt", "utf8").trimEnd();
+    res.type("text/plain; charset=utf-8").send(`${text}\n\n${compassLlmsSection()}\n`);
+  });
   app.use(express.static("public"));
   app.use("/docs", express.static("docs"));
 
@@ -228,6 +247,8 @@ export function createApp() {
         "/apis.json"
       ],
       supportedChains: [...supportedChainSlugs],
+      chainSupport: buildChainSupport(),
+      compass: isCompassLinkEnabled() ? { url: COMPASS_URL, priceUsd: "0.005" } : null,
       mcp: buildMcpMetadata(),
       docs: {
         openapi: `${config.publicBaseUrl}/openapi.json`,
@@ -291,7 +312,7 @@ export function createApp() {
         address: "EVM address, 0x plus 40 hex characters"
       },
       optionalParams: {
-        chains: "Comma-separated chain slugs. Supported: base, ethereum, optimism, arbitrum, polygon, robinhood.",
+        chains: `${buildChainSupport().helpers.note} Slugs: ${supportedChainSlugs.join(", ")}. Aliases: eth, robinhood-chain, rh.`,
         limit: "Transaction row limit for /tx-history and /wallet-report, 1-100.",
         days: "Transaction lookback window in days, 1-365.",
         category: "all, external, internal, erc20, erc721, or erc1155."
@@ -379,6 +400,14 @@ export function createApp() {
   });
 
   return app;
+}
+
+function compassHomepageHtml() {
+  return `<p class="sub">Related: <a href="${COMPASS_URL}" target="_blank" rel="noopener">x402 Compass</a> ranks Coinbase Bazaar services for a task, $0.005 per call.</p>`;
+}
+
+function compassLlmsSection() {
+  return `## Related\n\n- [x402 Compass](${COMPASS_URL}): ranks Coinbase Bazaar services for a task, $0.005 per call.`;
 }
 
 function wantsJson(req: express.Request) {
@@ -552,7 +581,8 @@ function buildDiscoverPayload() {
     paidResources: getPaidResources(),
     howToCall: getHowToCallExamples(),
     walletsToTry: buildWalletLinks(),
-    supportedChains: [...supportedChainSlugs]
+    supportedChains: [...supportedChainSlugs],
+    chainSupport: buildChainSupport()
   };
 }
 
@@ -632,6 +662,12 @@ function buildExamples() {
       `Run: npm run test:x402 -- --endpoint wallet-report --address ${demoWallet} --chains base --limit 20`
     ],
     mcp: buildMcpMetadata(),
+    pricesUsd: {
+      portfolio: config.x402PortfolioPriceUsd,
+      txHistory: config.x402TxHistoryPriceUsd,
+      walletReport: config.x402WalletReportPriceUsd
+    },
+    chainSupport: buildChainSupport(),
     notes: [
       "Missing or invalid address returns HTTP 400 before payment negotiation.",
       "A valid unpaid paid-endpoint request returns HTTP 402 with a payment-required header.",
@@ -647,6 +683,12 @@ function buildWalletsToTryPayload() {
       "Seed wallet list for agents and humans. Each item includes free intent-helper URLs and a direct paid /wallet-report URL that will return HTTP 402 until paid with x402.",
     baseUrl: config.publicBaseUrl,
     price: paymentRouteConfig["GET /wallet-report"].accepts.price,
+    pricesUsd: {
+      portfolio: config.x402PortfolioPriceUsd,
+      txHistory: config.x402TxHistoryPriceUsd,
+      walletReport: config.x402WalletReportPriceUsd
+    },
+    chainSupport: buildChainSupport(),
     network: paymentRouteConfig["GET /wallet-report"].accepts.network,
     asset: "USDC",
     wallets: buildWalletLinks(),

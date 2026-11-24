@@ -81,6 +81,7 @@ Payment details:
 - Chain: Base mainnet
 - Asset: USDC
 - Facilitator: Coinbase CDP, `https://api.cdp.coinbase.com/platform/v2/x402`
+- Discovery: Discoverable in the Coinbase x402 Bazaar.
 - `GET /portfolio`: `$0.005`
 - `GET /tx-history`: `$0.005`
 - `GET /wallet-report`: `$0.02`
@@ -108,17 +109,12 @@ Query parameters:
 - `address`: required EVM address, formatted as `0x` plus 40 hex characters.
 - `chains`: optional comma-separated chain list. Defaults to `base,ethereum`.
 
-Supported chains:
+Supported chains for this route:
 
-- `base`
-- `ethereum`
-- `eth`
-- `optimism`
-- `arbitrum`
-- `polygon`
-- `robinhood` (aliases: `robinhood-chain`, `rh`)
+- Token balances on base, ethereum, optimism, arbitrum, polygon, and robinhood. Canonical Robinhood Stock Token prices, bid/ask, multiplier, and trading-halt status when chains includes robinhood. recentActivity excludes Robinhood Chain.
+- Aliases: `eth` for ethereum, and `robinhood-chain` or `rh` for robinhood. Default: `base,ethereum`.
 
-Robinhood Chain responses identify canonical Robinhood Stock Tokens from Robinhood's asset registry and include bid/ask quotes, corporate-action multipliers, multiplier-adjusted midpoint USD values, trading-halt status, and available trading capabilities. Canonical Robinhood Chain USDG is valued at its $1 reference price. Internal transfer traces are unavailable on Robinhood Chain; external and token transfers remain available.
+Robinhood Chain responses identify canonical Robinhood Stock Tokens from Robinhood's asset registry and include bid/ask quotes, corporate-action multipliers, multiplier-adjusted midpoint USD values, trading-halt status, and available trading capabilities. Canonical Robinhood Chain USDG is valued at its $1 reference price.
 
 Example:
 
@@ -137,6 +133,10 @@ Query parameters:
 - `limit`: optional result cap from 1 to 100. Defaults to `50`.
 - `days`: optional transaction timestamp lookback from 1 to 365 days. Defaults to `30`.
 - `category`: optional `all`, `external`, `internal`, `erc20`, `erc721`, or `erc1155`.
+
+Supported chains for this route:
+
+- Transfer history on base, ethereum, optimism, arbitrum, polygon, and robinhood. Internal transfer traces are unavailable on robinhood. Transaction USD values are null. This route does not price Robinhood Stock Tokens.
 
 Example:
 
@@ -164,11 +164,19 @@ Query parameters:
 - `days`: optional transaction timestamp lookback from 1 to 365 days. Defaults to `30`.
 - `category`: optional `all`, `external`, `internal`, `erc20`, `erc721`, or `erc1155`.
 
+Supported chains for this route:
+
+- Portfolio and transfer history on base, ethereum, optimism, arbitrum, polygon, and robinhood. Stock Token pricing when chains includes robinhood. recentActivity excludes Robinhood Chain. Internal traces are unavailable on robinhood.
+
 Example:
 
 ```bash
 curl -i "https://walletlens.wallyweb.com/wallet-report?address=0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea&chains=base&limit=20"
 ```
+
+The bundled response includes `summary.transactionCount`, `portfolio` (the `/portfolio` snapshot), and `txHistory` (the `/tx-history` snapshot).
+
+The free /ask, /analyze, and /quote helpers accept the same six slugs and only build paid URLs.
 
 Use this endpoint for agent intents such as "analyze this wallet", "summarize this Base wallet", "get portfolio and transaction history", "find recent USDC transfers", "show top holdings and counterparties", or "explain EVM wallet activity".
 

@@ -2,6 +2,10 @@
 
 Paid API for EVM wallet intelligence: normalized portfolio snapshots, canonical Robinhood Stock Token holdings and prices, bundled wallet reports, and TxLens enriched transaction history. The app uses Alchemy plus Robinhood's public Stock Token APIs, then gates paid endpoints with x402 unless local dev bypass is enabled.
 
+`/portfolio`, `/tx-history`, and `/wallet-report` all accept `base`, `ethereum`, `optimism`, `arbitrum`, `polygon`, and `robinhood`. Stock Token prices are on `/portfolio` and `/wallet-report` when `chains` includes `robinhood`. Portfolio `recentActivity` excludes Robinhood Chain. `/tx-history` does not price Stock Tokens, and internal traces are unavailable on `robinhood`. `/wallet-report` combines both. The free `/ask`, `/analyze`, and `/quote` helpers accept the same slugs and only build paid URLs.
+
+Set `COMPASS_LINK=true` to show the x402 Compass link on the homepage and `/llms.txt`. It stays off until Compass is live. Redeploy after changing it so the Lambda environment picks it up.
+
 ## Secret Setup
 
 Do not paste API keys into chat or commit them. Create a local `.env` from `.env.example`:

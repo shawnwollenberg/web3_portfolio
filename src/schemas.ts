@@ -1,3 +1,5 @@
+import { routeChainSupport } from "./chains.js";
+
 export const portfolioInputSchema = {
   description:
     "Query parameters for GET /portfolio. Price is $0.005 USDC per call, settled on Base (eip155:8453). Set chains=robinhood to receive canonical Robinhood Stock Token pricing. For portfolio plus transfer history, use GET /wallet-report at $0.02.",
@@ -10,8 +12,7 @@ export const portfolioInputSchema = {
     chains: {
       type: "string",
       default: "base,ethereum",
-      description:
-        "Comma-separated chain slugs. Include robinhood to label canonical Robinhood Stock Tokens with multiplier-adjusted USD prices and trading-halt status."
+      description: routeChainSupport.portfolio.note
     }
   },
   required: ["address"],
@@ -211,7 +212,7 @@ export const txHistoryInputSchema = {
     chains: {
       type: "string",
       default: "base,ethereum",
-      description: "Comma-separated supported chain slugs, including robinhood for Robinhood Chain mainnet."
+      description: routeChainSupport.txHistory.note
     },
     limit: {
       type: "integer",
@@ -420,7 +421,7 @@ export const walletReportInputSchema = {
     chains: {
       type: "string",
       default: "base,ethereum",
-      description: "Comma-separated supported chain slugs used for both portfolio and transaction history, including robinhood."
+      description: routeChainSupport.walletReport.note
     },
     limit: {
       type: "integer",

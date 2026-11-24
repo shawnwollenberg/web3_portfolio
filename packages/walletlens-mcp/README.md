@@ -7,7 +7,7 @@ The server runs locally over stdio. Paid requests are signed locally with a dedi
 ## Available tools
 
 - `get_service_metadata` — free live pricing, documentation, and service metadata
-- `get_supported_chains` — free supported-chain metadata
+- `get_supported_chains` — free supported-chain metadata. All three paid tools accept `base`, `ethereum`, `optimism`, `arbitrum`, `polygon`, and `robinhood`. `eth`, `robinhood-chain`, and `rh` are aliases. `/portfolio` prices Robinhood Stock Tokens and omits robinhood from `recentActivity`. `/tx-history` does not price Stock Tokens, and internal traces are unavailable on robinhood. `/wallet-report` combines both.
 - `get_openapi_schema` — free OpenAPI schema
 - `get_portfolio` — paid portfolio balances and USD values
 - `get_tx_history` — paid normalized transaction history

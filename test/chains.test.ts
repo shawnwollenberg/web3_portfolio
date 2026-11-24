@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { parseChains } from "../src/chains.js";
+import { parseChains, routeChainSupport, supportedChainSlugs } from "../src/chains.js";
 
 describe("Robinhood Chain selection", () => {
   it("maps Robinhood Chain to its Alchemy and CAIP-2 identifiers", () => {
@@ -20,5 +20,8 @@ describe("Robinhood Chain selection", () => {
   it("supports selecting all six canonical chain slugs", () => {
     const chains = parseChains("base,ethereum,optimism,arbitrum,polygon,robinhood");
     assert.equal(chains.length, 6);
+    for (const route of Object.values(routeChainSupport)) {
+      assert.deepEqual(route.chains, [...supportedChainSlugs]);
+    }
   });
 });
