@@ -38,18 +38,19 @@ WalletLens provides machine-readable wallet intelligence for agents and automati
 - Payment asset: USDC
 - Payment protocol: x402
 - Facilitator: Coinbase CDP (`https://api.cdp.coinbase.com/platform/v2/x402`)
+- Discovery: Discoverable in the Coinbase x402 Bazaar.
 - Query params:
   - `address`: required EVM wallet address
   - `chains`: optional comma-separated chain list
 
 ## Supported Chains
 
-- `base`
-- `ethereum` or `eth`
-- `optimism`
-- `arbitrum`
-- `polygon`
-- `robinhood` (Robinhood Chain mainnet, `eip155:4663`)
+Every paid route and the free `/ask`, `/analyze`, and `/quote` helpers accept the same six slugs: `base`, `ethereum`, `optimism`, `arbitrum`, `polygon`, and `robinhood`. Aliases: `eth` for ethereum, and `robinhood-chain` or `rh` for robinhood. The default chain list is `base,ethereum`.
+
+- `GET /portfolio`: Token balances on base, ethereum, optimism, arbitrum, polygon, and robinhood. Canonical Robinhood Stock Token prices, bid/ask, multiplier, and trading-halt status when chains includes robinhood. recentActivity excludes Robinhood Chain.
+- `GET /tx-history`: Transfer history on base, ethereum, optimism, arbitrum, polygon, and robinhood. Internal transfer traces are unavailable on robinhood. Transaction USD values are null. This route does not price Robinhood Stock Tokens.
+- `GET /wallet-report`: Portfolio and transfer history on base, ethereum, optimism, arbitrum, polygon, and robinhood. Stock Token pricing when chains includes robinhood. recentActivity excludes Robinhood Chain. Internal traces are unavailable on robinhood.
+- Helpers: The free /ask, /analyze, and /quote helpers accept the same six slugs and only build paid URLs.
 
 ## Notes For Agents
 

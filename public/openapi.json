@@ -468,7 +468,7 @@
               "default": "base,ethereum",
               "examples": ["base", "base,ethereum", "base,ethereum,arbitrum,optimism,polygon", "robinhood"]
             },
-            "description": "Comma-separated supported chain slugs."
+            "description": "Comma-separated slugs. Token balances on base, ethereum, optimism, arbitrum, polygon, and robinhood. Canonical Robinhood Stock Token prices, bid/ask, multiplier, and trading-halt status when chains includes robinhood. recentActivity excludes Robinhood Chain. Aliases: eth, robinhood-chain, rh."
           }
         ],
         "responses": {
@@ -538,9 +538,9 @@
             "schema": {
               "type": "string",
               "default": "base,ethereum",
-              "examples": ["base", "base,ethereum", "robinhood"]
+              "examples": ["base", "base,ethereum", "base,ethereum,optimism,arbitrum,polygon", "robinhood"]
             },
-            "description": "Comma-separated supported chain slugs."
+            "description": "Comma-separated slugs. Transfer history on base, ethereum, optimism, arbitrum, polygon, and robinhood. Internal transfer traces are unavailable on robinhood. Transaction USD values are null. This route does not price Robinhood Stock Tokens."
           },
           {
             "name": "limit",
@@ -635,9 +635,9 @@
             "schema": {
               "type": "string",
               "default": "base,ethereum",
-              "examples": ["base", "base,ethereum", "robinhood"]
+              "examples": ["base", "base,ethereum", "base,ethereum,optimism,arbitrum,polygon", "robinhood"]
             },
-            "description": "Comma-separated supported chain slugs."
+            "description": "Comma-separated slugs used for both sections. Portfolio and transfer history on base, ethereum, optimism, arbitrum, polygon, and robinhood. Stock Token pricing when chains includes robinhood. recentActivity excludes Robinhood Chain. Internal traces are unavailable on robinhood."
           },
           {
             "name": "limit",
@@ -814,7 +814,12 @@
           },
           "supportedChains": {
             "type": "array",
-            "items": { "type": "string" }
+            "items": { "type": "string" },
+            "description": "Canonical slugs accepted by every paid route and the free helpers. See chainSupport for per-route limits."
+          },
+          "chainSupport": {
+            "type": "object",
+            "description": "Per-route chain acceptance and feature limits. Every paid route accepts the same six slugs."
           },
           "mcp": {
             "type": "object",

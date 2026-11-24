@@ -31,13 +31,13 @@ const walletReportPrice = config.x402WalletReportPriceUsd;
 export const CDP_RESOURCE_DESCRIPTION_MAX = 450;
 
 const portfolioDescription =
-  `$${portfolioPrice} USDC per call on Base (eip155:8453). Canonical Robinhood Stock Tokens: multiplier-adjusted USD price, bid/ask, and trading-halt status, plus normalized EVM holdings. Query: address, chains (use robinhood). Holdings plus transfers: GET /wallet-report ($${walletReportPrice}).`;
+  `$${portfolioPrice} USDC per call on Base (eip155:8453). Canonical Robinhood Stock Tokens plus EVM balances on base, ethereum, optimism, arbitrum, polygon, and robinhood. Price, bid/ask, and halt status on robinhood. recentActivity skips robinhood. Holdings plus transfers: GET /wallet-report ($${walletReportPrice}).`;
 
 const txHistoryDescription =
-  `$${txHistoryPrice} USDC per call on Base (eip155:8453). Normalized transfer history for Base, Ethereum, and Robinhood Chain: direction, counterparty, category, and decoded summaries. Query: address, chains, limit, days, category. Portfolio plus this history: GET /wallet-report ($${walletReportPrice}).`;
+  `$${txHistoryPrice} USDC per call on Base (eip155:8453). Transfer history on base, ethereum, optimism, arbitrum, polygon, and robinhood: direction, counterparty, category, and decoded summaries. Internal traces are unavailable on robinhood. Query: address, chains, limit, days, category. With portfolio: GET /wallet-report ($${walletReportPrice}).`;
 
 const walletReportDescription =
-  `$${walletReportPrice} USDC per call on Base (eip155:8453). Bundles the $${portfolioPrice} portfolio snapshot and $${txHistoryPrice} transfer history, including canonical Robinhood Stock Token prices and trading-halt status. Query: address, chains, limit, days, category.`;
+  `$${walletReportPrice} USDC per call on Base (eip155:8453). Bundles the $${portfolioPrice} portfolio snapshot and $${txHistoryPrice} transfer history on the same six chains, including canonical Robinhood Stock Token prices and halt status. recentActivity skips robinhood. Query: address, chains, limit, days, category.`;
 
 export const paymentRouteConfig = {
   "GET /portfolio": paidRoute("/portfolio", portfolioPrice, portfolioDescription, {

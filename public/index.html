@@ -280,6 +280,27 @@
     flex-wrap: wrap;
     gap: 8px;
   }
+  .section-lead {
+    max-width: 760px;
+    margin: 0 0 18px;
+    color: var(--fg-dim);
+    font-size: 15px;
+  }
+  .chain-route {
+    margin: 0 0 22px;
+  }
+  .chain-route h3 {
+    margin: 0 0 8px;
+    font-family: var(--mono);
+    font-size: 14px;
+    color: var(--fg);
+  }
+  .chain-route p {
+    margin: 8px 0 0;
+    max-width: 760px;
+    color: var(--fg-dim);
+    font-size: 13.5px;
+  }
   .chip {
     font-family: var(--mono);
     font-size: 12px;
@@ -364,7 +385,9 @@
       Pass an address and get normalized holdings, recent activity, and canonical Robinhood Stock Token
       prices, multipliers, and trading-halt metadata. Agents pay per request in Base USDC over
       <a href="https://www.x402.org/" target="_blank" rel="noopener">x402</a>—no account or API key required.
+      Discoverable in the Coinbase x402 Bazaar.
     </p>
+    <!-- compass -->
     <div class="cta-row">
       <a class="btn primary" href="/wallets-to-try">Try a wallet →</a>
       <a class="btn" href="/ask?q=analyze%20wallet%200x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea%20on%20base">Ask helper</a>
@@ -509,13 +532,46 @@ curl <span class="s">"https://walletlens.wallyweb.com/wallet-report?address=0x52
 
   <section>
     <h2>Supported chains</h2>
-    <div class="chains">
-      <span class="chip">base</span>
-      <span class="chip">ethereum</span>
-      <span class="chip">optimism</span>
-      <span class="chip">arbitrum</span>
-      <span class="chip">polygon</span>
-      <span class="chip">robinhood</span>
+    <p class="section-lead">Every paid route and the free helpers accept the same six slugs: base, ethereum, optimism, arbitrum, polygon, and robinhood. Aliases: eth, robinhood-chain, rh. Features differ by route.</p>
+    <div class="chain-route">
+      <h3>/portfolio</h3>
+      <div class="chains">
+        <span class="chip">base</span>
+        <span class="chip">ethereum</span>
+        <span class="chip">optimism</span>
+        <span class="chip">arbitrum</span>
+        <span class="chip">polygon</span>
+        <span class="chip">robinhood</span>
+      </div>
+      <p>Token balances on base, ethereum, optimism, arbitrum, polygon, and robinhood. Canonical Robinhood Stock Token prices, bid/ask, multiplier, and trading-halt status when chains includes robinhood. recentActivity excludes Robinhood Chain.</p>
+    </div>
+    <div class="chain-route">
+      <h3>/tx-history</h3>
+      <div class="chains">
+        <span class="chip">base</span>
+        <span class="chip">ethereum</span>
+        <span class="chip">optimism</span>
+        <span class="chip">arbitrum</span>
+        <span class="chip">polygon</span>
+        <span class="chip">robinhood</span>
+      </div>
+      <p>Transfer history on base, ethereum, optimism, arbitrum, polygon, and robinhood. Internal transfer traces are unavailable on robinhood. Transaction USD values are null. This route does not price Robinhood Stock Tokens.</p>
+    </div>
+    <div class="chain-route">
+      <h3>/wallet-report</h3>
+      <div class="chains">
+        <span class="chip">base</span>
+        <span class="chip">ethereum</span>
+        <span class="chip">optimism</span>
+        <span class="chip">arbitrum</span>
+        <span class="chip">polygon</span>
+        <span class="chip">robinhood</span>
+      </div>
+      <p>Portfolio and transfer history on base, ethereum, optimism, arbitrum, polygon, and robinhood. Stock Token pricing when chains includes robinhood. recentActivity excludes Robinhood Chain. Internal traces are unavailable on robinhood.</p>
+    </div>
+    <div class="chain-route">
+      <h3>/ask, /analyze, /quote</h3>
+      <p>The free /ask, /analyze, and /quote helpers accept the same six slugs and only build paid URLs.</p>
     </div>
   </section>
 
@@ -528,7 +584,7 @@ curl <span class="s">"https://walletlens.wallyweb.com/wallet-report?address=0x52
       </div>
       <div class="feat">
         <h3>Normalized output</h3>
-        <p>Consistent portfolio and transaction schemas across every supported chain.</p>
+        <p>The same six chain slugs on every paid route. Stock Token pricing, recentActivity, and internal traces differ by route.</p>
       </div>
       <div class="feat">
         <h3>MCP server included</h3>

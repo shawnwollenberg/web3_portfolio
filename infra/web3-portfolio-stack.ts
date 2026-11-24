@@ -88,6 +88,7 @@ export class Web3PortfolioStack extends cdk.Stack {
         PREVIEW_WALLET_CHAINS: process.env.PREVIEW_WALLET_CHAINS || "base",
         PREVIEW_CACHE_TTL_SECONDS: process.env.PREVIEW_CACHE_TTL_SECONDS || "600",
         PROVIDER_TIMEOUT_MS: process.env.PROVIDER_TIMEOUT_MS || "10000",
+        COMPASS_LINK: process.env.COMPASS_LINK === "true" || process.env.COMPASS_LINK === "1" ? "true" : "false",
         ...(process.env.ANALYTICS_IP_SALT ? { ANALYTICS_IP_SALT: process.env.ANALYTICS_IP_SALT } : {}),
         ...(cdpApiKeyId ? { CDP_API_KEY_ID: cdpApiKeyId } : {}),
         ...(cdpApiKeySecret ? { CDP_API_KEY_SECRET: cdpApiKeySecret } : {})

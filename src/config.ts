@@ -4,6 +4,12 @@ import { z } from "zod";
 dotenv.config();
 
 export const CDP_FACILITATOR_URL = "https://api.cdp.coinbase.com/platform/v2/x402";
+export const COMPASS_URL = "https://compass.wallyweb.com";
+
+export function isCompassLinkEnabled() {
+  const value = process.env.COMPASS_LINK?.trim().toLowerCase();
+  return value === "true" || value === "1";
+}
 const BASE_MAINNET = "eip155:8453";
 const MIN_USDC_ATOMIC = 1_000n;
 

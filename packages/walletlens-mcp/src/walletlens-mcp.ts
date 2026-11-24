@@ -54,13 +54,27 @@ server.registerTool(
 server.registerTool(
   "get_supported_chains",
   {
-    description: "Return WalletLens supported EVM chain slugs.",
+    description:
+      "Return WalletLens supported EVM chain slugs. All paid routes accept the same six slugs; Stock Token pricing, recentActivity, and internal traces differ by route.",
     inputSchema: {}
   },
   async () =>
     jsonToolResult({
       defaultChains: ["base", "ethereum"],
-      supportedChains: ["base", "ethereum", "eth", "optimism", "arbitrum", "polygon", "robinhood"],
+      supportedChains: ["base", "ethereum", "optimism", "arbitrum", "polygon", "robinhood"],
+      aliases: {
+        eth: "ethereum",
+        "robinhood-chain": "robinhood",
+        rh: "robinhood"
+      },
+      routes: {
+        portfolio:
+          "Token balances on base, ethereum, optimism, arbitrum, polygon, and robinhood. Canonical Robinhood Stock Token prices, bid/ask, multiplier, and trading-halt status when chains includes robinhood. recentActivity excludes Robinhood Chain.",
+        txHistory:
+          "Transfer history on base, ethereum, optimism, arbitrum, polygon, and robinhood. Internal transfer traces are unavailable on robinhood. Transaction USD values are null. This route does not price Robinhood Stock Tokens.",
+        walletReport:
+          "Portfolio and transfer history on base, ethereum, optimism, arbitrum, polygon, and robinhood. Stock Token pricing when chains includes robinhood. recentActivity excludes Robinhood Chain. Internal traces are unavailable on robinhood."
+      },
       solanaSupported: false
     })
 );
@@ -84,7 +98,12 @@ server.registerTool(
       "Fetch a paid WalletLens portfolio snapshot, including canonical Robinhood Stock Tokens when chains=robinhood. Requires WALLETLENS_X402_PRIVATE_KEY.",
     inputSchema: {
       address: z.string().regex(/^0x[a-fA-F0-9]{40}$/).describe("EVM wallet address."),
-      chains: z.string().default("base,ethereum").describe("Comma-separated supported chain slugs.")
+      chains: z
+        .string()
+        .default("base,ethereum")
+        .describe(
+          "Comma-separated slugs: base, ethereum, optimism, arbitrum, polygon, robinhood. Stock Token prices when robinhood is included. recentActivity excludes robinhood."
+        )
     }
   },
   async ({ address, chains }) => {
@@ -95,7 +114,12 @@ server.registerTool(
 
 const txHistoryInputSchema = {
   address: z.string().regex(/^0x[a-fA-F0-9]{40}$/).describe("EVM wallet address."),
-  chains: z.string().default("base,ethereum").describe("Comma-separated supported chain slugs."),
+  chains: z
+    .string()
+    .default("base,ethereum")
+    .describe(
+      "Comma-separated slugs: base, ethereum, optimism, arbitrum, polygon, robinhood. Internal traces are unavailable on robinhood. /wallet-report also prices Stock Tokens when robinhood is included; recentActivity excludes robinhood."
+    ),
   limit: z.number().int().positive().max(100).default(50).describe("Maximum rows to return."),
   days: z.number().int().positive().max(365).default(30).describe("Transaction lookback window."),
   category: z
